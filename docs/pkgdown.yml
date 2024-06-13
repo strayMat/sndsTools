@@ -1,7 +1,7 @@
-pandoc: '3.2'
+pandoc: 2.9.2.1
 pkgdown: 2.0.9
 pkgdown_sha: ~
 articles:
   paresnds: paresnds.html
-last_built: 2024-06-13T14:21Z
+last_built: 2024-06-13T20:28Z
 

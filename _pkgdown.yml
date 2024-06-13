@@ -1,8 +1,9 @@
-url: https://straymat.github.io/paresnds/
+url: ~
+
 repo:
   url:
-    home: https://straymat.github.io/paresnds/
-    source: https://github.com/strayMat/paresnds/
+    home: https://github.com/straymat/paresnds
+    source: https://github.com/strayMat/paresnds/tree/main/
 template:
   bootstrap: 5
   bslib:
@@ -10,13 +11,8 @@ template:
 lang: fr
 navbar:
   structure:
-    left:
-    - intro
-    - reference
-    - articles
-    right:
-    - search
-    - github
+    left: [intro, reference, articles]
+    right: [search, github]
 home:
   sidebar:
     structure:

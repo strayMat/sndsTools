@@ -20,8 +20,8 @@ knitr::opts_chunk$set(
 
 ## Installation
 
-```{r}
-# devtools::install_github("paresnds/paresnds")
+```{r, eval = FALSE}
+devtools::install_github("straymat/paresnds")
 ```
 
 ## Utilisation
