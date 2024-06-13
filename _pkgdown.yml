@@ -1,37 +1,37 @@
-url: ~
-
+url: https://straymat.github.io/paresnds/
 repo:
   url:
-    home: https://github.com/strayMat/paresnds
+    home: https://straymat.github.io/paresnds/
     source: https://github.com/strayMat/paresnds/
-
 template:
   bootstrap: 5
   bslib:
-    headings-color: "#6ab0c7"
-
+    headings-color: '#6ab0c7'
 lang: fr
-
 navbar:
   structure:
-    left:  [intro, reference, articles]
-    right: [search, github]
-
+    left:
+    - intro
+    - reference
+    - articles
+    right:
+    - search
+    - github
 home:
   sidebar:
-    structure: [license, citation, authors]
-
+    structure:
+    - license
+    - citation
+    - authors
 authors:
   Anntoine Belloir:
     href: https://github.com/abelloir-zz
   Matthieu Doutreligne:
     href: https://info.m2dou.fr/
-
 reference:
 - title: Extraction SNDS
   desc: Fonctions pour extraire les données de soins individuelles à partir du SNDS.
-- contents:
-  - starts_with("extract")
+- contents: starts_with("extract")
 - title: Utilitaires
   desc: Fonctions utilitaires pour manipuler les données extraites.
 - contents:
@@ -39,3 +39,4 @@ reference:
   - get_first_non_archived_year
   - create_table_from_query
   - initialize_connection
+

@@ -34,4 +34,4 @@ Suggests:
     knitr,
     rmarkdown
 VignetteBuilder: knitr
-URL: https://github.com/
+URL: https://straymat.github.io/paresnds/
