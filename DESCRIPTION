@@ -1,0 +1,37 @@
+Title: Extraction de pathologies en R sur le SNDS
+Package: paresnds
+Version: 0.0.0.1
+Date: 2024-06-13
+Depends: R (>= 3.5.0)
+Imports: 
+    dplyr (>= 1.0.7),
+    dbplyr (>= 2.1.1),
+    DBI,
+    glue,
+    haven,
+    here,
+    lubridate,
+    stringr
+Authors@R: c(
+    person(
+        "Antoine", "Belloir", ,
+        "antoine.belloir@icm-institute.org",
+        role = c("aut", "cre"),
+        ),
+    person(
+        "Matthieu", "Doutreligne", , 
+        "matt.dout@gmail.com", 
+        role = c("aut"),
+        comment = c(ORCID = "0000-0001-8072-9966")
+        )
+    )
+Description: Code d'extraction de données du SNDS.
+License: EUPL
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.1
+Suggests: 
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
+URL: https://github.com/
