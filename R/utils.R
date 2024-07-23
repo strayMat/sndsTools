@@ -3,10 +3,10 @@
 #'
 #' @export
 initialize_connection <- function() {
-  drv <- dbDriver("Oracle")
-  conn <- dbConnect(drv, dbname = "IPIAMPR2.WORLD")
   Sys.setenv(TZ = "Europe/Paris")
   Sys.setenv(ORA_SDTZ = "Europe/Paris")
+  drv <- dbDriver("Oracle")
+  conn <- dbConnect(drv, dbname = "IPIAMPR2.WORLD")
   return(conn)
 }
 
