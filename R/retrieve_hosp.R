@@ -4,7 +4,6 @@
 # library(DBI)
 # library(glue)
 # library(lubridate)
-# library(stringr)
 # source("~/sasdata1/park/retrieve/utils.R")
 
 finess_out <- c(
@@ -62,7 +61,7 @@ extract_hospital_stays <- function(
     ben_table_name = NULL,
     output_table_name = NULL,
     r_output_path = NULL) {
-  conn <- initialize_connection() # Connect to database
+  conn <- connect_oracle() # Connect to database
 
   start_year <- lubridate::year(start_date)
   end_year <- lubridate::year(end_date)

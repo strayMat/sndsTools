@@ -7,7 +7,8 @@
 create_table_or_insert_from_query(
   conn = NULL,
   output_table_name = NULL,
-  query = NULL
+  query = NULL,
+  append = FALSE
 )
 }
 \arguments{

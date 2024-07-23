@@ -19,7 +19,7 @@ TODO (figure à mettre dans man/figures)
 ### Technologies
 
 - Langage de programmation : R
-- Packages utilisés : haven, here, dplyr, dbplyr, DBI,glue, haven, here, lubridate, stringr
+- Packages utilisés : haven, here, dplyr, dbplyr, DBI, glue, lubridate
 
 
 ## Liens utiles 

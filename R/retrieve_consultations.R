@@ -15,7 +15,7 @@ extract_consultations <- function(
     ben_table_name = NULL,
     output_table_name = NULL,
     r_output_path = NULL) {
-  conn <- initialize_connection() # Connect to database
+  conn <- connect_oracle() # Connect to database
 
   start_year <- lubridate::year(start_date)
   end_year <- lubridate::year(end_date) + 1
