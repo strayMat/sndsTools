@@ -1,39 +1,15 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>/404.html</loc>
-  </url>
-  <url>
-    <loc>/LICENSE-text.html</loc>
-  </url>
-  <url>
-    <loc>/articles/index.html</loc>
-  </url>
-  <url>
-    <loc>/articles/paresnds.html</loc>
-  </url>
-  <url>
-    <loc>/authors.html</loc>
-  </url>
-  <url>
-    <loc>/index.html</loc>
-  </url>
-  <url>
-    <loc>/reference/create_table_from_query.html</loc>
-  </url>
-  <url>
-    <loc>/reference/create_table_or_insert_from_query.html</loc>
-  </url>
-  <url>
-    <loc>/reference/extract_hospital_consultations.html</loc>
-  </url>
-  <url>
-    <loc>/reference/get_first_non_archived_year.html</loc>
-  </url>
-  <url>
-    <loc>/reference/index.html</loc>
-  </url>
-  <url>
-    <loc>/reference/initialize_connection.html</loc>
-  </url>
+<urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
+<url><loc>/404.html</loc></url>
+<url><loc>/LICENSE-text.html</loc></url>
+<url><loc>/articles/index.html</loc></url>
+<url><loc>/articles/paresnds.html</loc></url>
+<url><loc>/authors.html</loc></url>
+<url><loc>/index.html</loc></url>
+<url><loc>/reference/create_table_from_query.html</loc></url>
+<url><loc>/reference/create_table_or_insert_from_query.html</loc></url>
+<url><loc>/reference/extract_hospital_consultations.html</loc></url>
+<url><loc>/reference/get_first_non_archived_year.html</loc></url>
+<url><loc>/reference/index.html</loc></url>
+<url><loc>/reference/initialize_connection.html</loc></url>
 </urlset>
+
