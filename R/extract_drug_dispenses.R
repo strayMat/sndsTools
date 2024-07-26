@@ -58,7 +58,7 @@ extract_drug_dispenses <- function(
   temp_table_name <-
     paste0("TMP_DISP_", format(Sys.time(), "%Y%m%d_%H%M%S"))
   try(
-    DBI::dbRemoveTable(conn, database_output_table_name),
+    DBI::dbRemoveTable(conn, temp_table_name),
     silent = TRUE
   )
   start_year <- lubridate::year(start_date)
