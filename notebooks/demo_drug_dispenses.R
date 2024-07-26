@@ -40,6 +40,23 @@ dispenses <- extract_drug_dispenses(
 )
 head(dispenses)
 
+# You can also provide your own database connection
+# to the extract_drug_dispenses function. This is useful
+# to avoid opening and closing a connection for each
+# extraction function call.
+conn <- initialize_connection()
+start_date <- as.Date("2010-01-01")
+end_date <- as.Date("2010-01-03")
+starts_with_codes <- c("N04A")
+
+dispenses <- extract_drug_dispenses(
+  start_date = start_date,
+  end_date = end_date,
+  starts_with_codes = starts_with_codes,
+  conn = conn
+)
+head(dispenses)
+
 # Create a sample of patients
 conn <- initialize_connection()
 ref_ir_ben <- tbl(conn, "IR_BEN_R")
@@ -79,3 +96,24 @@ dispenses <- extract_drug_dispenses(
   patients_ids = patients_ids_sample
 )
 head(dispenses)
+
+# If the output_table_name argument is provided,
+# the output will be stored in a table with the
+# given name. This is especially useful when the
+# output table is too large to be stored in memory.
+start_date <- as.Date("2010-01-01")
+end_date <- as.Date("2010-01-15")
+output_table_name <- "TMP_DISPENSES"
+print(dbExistsTable(conn, output_table_name))
+
+extract_drug_dispenses(
+  start_date = start_date,
+  end_date = end_date,
+  patients_ids = patients_ids_sample,
+  output_table_name = output_table_name
+)
+
+print(dbExistsTable(conn, output_table_name))
+query <- glue("SELECT COUNT(*) FROM {output_table_name}")
+result <- dbGetQuery(conn, query)
+print(result)
