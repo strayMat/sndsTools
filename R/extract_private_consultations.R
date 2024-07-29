@@ -7,7 +7,7 @@
 # source("/sasdata/prd/users/44a001280010899/park/retrieve/utils.R")
 
 
-extract_consultations <- function(
+extract_private_consultations <- function(
     start_date = NULL,
     end_date = NULL,
     pse_spe_codes = NULL,
