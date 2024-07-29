@@ -7,43 +7,56 @@
 #' sont extraites.
 #' Si des codes ICD 10 ou des numéros d'ALD sont fournis,
 #' seules les ALD associées à ces codes ICD 10 ou numéros
-#' d'ALD sont extraites.
+#' d'ALD sont extraites. Dans le cas contraire, toutes les
+#' ALD sont extraites.
 #' Si des identifiants de patients sont fournis, seules
-#' les ALD associées à ces patients sont extraites.
+#' les ALD associées à ces patients sont extraites. Dans
+#' le cas contraire, les ALD de tous les patients sont extraites.
 #'
 #' @param start_date Date La date de début de la période
-#' sur laquelle extraire les ALD actives.
+#'   sur laquelle extraire les ALD actives.
 #' @param end_date Date La date de fin de la période
-#' sur laquelle extraire les ALD actives.
+#'   sur laquelle extraire les ALD actives.
 #' @param icd_cod_starts_with character vector Un vecteur de codes
-#' ICD 10. Si `icd_cod_starts_with` ou `ald_numbers` sont fournis,
-#' seules les ALD associées à ces codes ICD 10 ou numéros d'ALD
-#' sont extraites. Sinon, toutes les ALD actives sur la période
-#' [start_date, end_date] sont extraites.
+#'   ICD 10. Si `icd_cod_starts_with` ou `ald_numbers` sont fournis,
+#'   seules les ALD associées à ces codes ICD 10 ou numéros d'ALD
+#'   sont extraites. Sinon, toutes les ALD actives sur la période
+#'   [start_date, end_date] sont extraites.
 #' @param ald_numbers numeric vector Un vecteur de numéros d'ALD.
-#' Si `icd_cod_starts_with` ou `ald_numbers` sont fournis,
-#' seules les ALD associées à ces codes ICD 10 ou numéros d'ALD
-#' sont extraites. Sinon, toutes les ALD actives sur la période
-#' [start_date, end_date] sont extraites.
-#' @param excl_atm_nat character vector Un vecteur de codes
-#' IMB_ATM_NAT à exclure. Par défaut, les ALD de nature
-#' 11, 12 et 13 sont exclues.
+#'   Si `icd_cod_starts_with` ou `ald_numbers` sont fournis,
+#'   seules les ALD associées à ces codes ICD 10 ou numéros d'ALD
+#'   sont extraites. Sinon, toutes les ALD actives sur la période
+#'   [start_date, end_date] sont extraites.
+#' @param excl_etm_nat character vector Un vecteur de codes
+#'   IMB_ETM_NAT à exclure. Par défaut, les ALD de nature
+#'   11, 12 et 13 sont exclues car elles correspondent à des
+#'   exonérations pour accidents du travail ou maladies professionnelles.
+#'   Voir la fiche suivante de la documentation :
+#'   https://documentation-snds.health-data-hub.fr/snds/fiches/beneficiaires_ald.html
+#'   et notamment le Programme #1 pour la référence de ce filtrage.
 #' @param patients_ids data.frame Un data.frame contenant les
-#' paires d'identifiants des patients pour lesquels les ALD
-#' doivent être extraites. Les colonnes de ce data.frame
-#' doivent être "ben_idt_ano" et "ben_nir_psa" (en minuscules). Les
-#' "ben_nir_psa" doivent être tous les "ben_nir_psa" associés aux
-#' "ben_idt_ano" fournis. Si `patients_ids` n'est pas fourni,
-#' les ALD de tous les patients sont extraites.
-#' @return Un data.frame contenant les ALDs actives sur la période.
-#' La première colonne est BEN_NIR_PSA si aucun identifiant de
-#' patient n'est fourni. Si  la première colonne est BEN_IDT_ANO.
-#' Les autres colonnes par défaut sont les suivantes :
-#' - IMB_ALD_NUM : Le numéro de l'ALD
-#' - IMB_ALD_DTD : La date de début de l'ALD
-#' - IMB_ALD_DTF : La date de fin de l'ALD
-#' - IMB_ETM_NAT : La nature de l'ALD
-#' - MED_MTF_COD : Le code ICD 10 de la pathologie associée à l'ALD
+#'   paires d'identifiants des patients pour lesquels les ALD
+#'   doivent être extraites. Les colonnes de ce data.frame
+#'   doivent être "ben_idt_ano" et "ben_nir_psa" (en minuscules). Les
+#'   "ben_nir_psa" doivent être tous les "ben_nir_psa" associés aux
+#'   "ben_idt_ano" fournis. Si `patients_ids` n'est pas fourni,
+#'   les ALD de tous les patients sont extraites.
+#' @return Si output_table_name est NULL, retourne un data.frame contenant les
+#'   les ALDs actives sur la période. Si output_table_name est fourni,
+#'   sauvegarde les résultats dans la table spécifiée dans Oracle et
+#'   retourne NULL de manière invisible. Dans les deux cas les colonnes
+#'   de la table de sortie sont :
+#'   - BEN_NIR_PSA : Colonne présente uniquement si les identifiants
+#'   patients (`patients_ids`) ne sont pas fournis. Identifiant SNDS,
+#'   ausi appelé pseudo-NIR.
+#'   - BEN_IDT_ANO : Colonne présente uniquement si les identifiants
+#'   patients (`patients_ids`) sont fournis. Numéro d’inscription
+#'   au répertoire (NIR) anonymisé.
+#'   - IMB_ALD_NUM : Le numéro de l'ALD
+#'   - IMB_ALD_DTD : La date de début de l'ALD
+#'   - IMB_ALD_DTF : La date de fin de l'ALD
+#'   - IMB_ETM_NAT : La nature de l'ALD
+#'   - MED_MTF_COD : Le code ICD 10 de la pathologie associée à l'ALD
 #'
 #' @examples
 #' start_date <- as.Date("2010-01-01")
@@ -61,17 +74,52 @@ extract_long_term_disease <- function(
     end_date = NULL,
     icd_cod_starts_with = NULL,
     ald_numbers = NULL,
-    excl_atm_nat = c("11", "12", "13"),
-    patients_ids = NULL) {
-  conn <- initialize_connection()
+    excl_etm_nat = c("11", "12", "13"),
+    patients_ids = NULL,
+    output_table_name = NULL,
+    conn = NULL) {
+  if (is.null(start_date) || is.null(end_date)) {
+    stop("Both start_date and end_date must be provided.")
+  }
+
+  if (!inherits(start_date, "Date") || !inherits(end_date, "Date")) {
+    stop("start_date and end_date must be Date objects.")
+  }
+
+  if (start_date > end_date) {
+    stop("start_date must be earlier than or equal to end_date.")
+  }
+
+  connection_opened <- FALSE
+  if (is.null(conn)) {
+    conn <- initialize_connection()
+    connection_opened <- TRUE
+  }
+
+  if (!is.null(output_table_name)) {
+    if (!is.character(output_table_name)) {
+      stop("output_table_name must be a character string")
+    }
+    table_name <- output_table_name
+    if (DBI::dbExistsTable(conn, table_name)) {
+      warning(paste("Table", table_name, "already exists. It will be overwritten."))
+    }
+  } else {
+    table_name <- paste0("TMP_LTD_", format(Sys.time(), "%Y%m%d_%H%M%S"))
+  }
+  try(
+    DBI::dbRemoveTable(conn, table_name),
+    silent = TRUE
+  )
+
   formatted_start_date <- format(start_date, "%Y-%m-%d")
   formatted_end_date <- format(end_date, "%Y-%m-%d")
 
   if (!is.null(icd_cod_starts_with)) {
     print(glue("Extracting LTD status for ICD 10 codes starting \
     with {paste(icd_cod_starts_with, collapse = ' or ')}..."))
-  } 
-  if (!is.null(ald_numbers)){
+  }
+  if (!is.null(ald_numbers)) {
     print(glue("Extracting LTD status for ALD numbers \
     {paste(ald_numbers, collapse = ',')}..."))
   }
@@ -123,7 +171,7 @@ extract_long_term_disease <- function(
   query <- imb_r %>%
     filter(
       sql(date_condition),
-      !(IMB_ETM_NAT %in% excl_atm_nat)
+      !(IMB_ETM_NAT %in% excl_etm_nat)
     )
 
   if (!is.null(icd_cod_starts_with) | !is.null(ald_numbers)) {
