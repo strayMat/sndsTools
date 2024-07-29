@@ -33,14 +33,18 @@
 #'   exonérations pour accidents du travail ou maladies professionnelles.
 #'   Voir la fiche suivante de la documentation :
 #'   https://documentation-snds.health-data-hub.fr/snds/fiches/beneficiaires_ald.html
-#'   et notamment le Programme #1 pour la référence de ce filtrage.
-#' @param patients_ids data.frame Un data.frame contenant les
-#'   paires d'identifiants des patients pour lesquels les ALD
-#'   doivent être extraites. Les colonnes de ce data.frame
+#'   et notamment le Programme #1 pour la référence de ce filtre.
+#' @param patients_ids data.frame Optionnel. Un data.frame contenant les
+#'   paires d'identifiants des patients pour lesquels les délivrances de
+#'   médicaments doivent être extraites. Les colonnes de ce data.frame
 #'   doivent être "ben_idt_ano" et "ben_nir_psa" (en minuscules). Les
 #'   "ben_nir_psa" doivent être tous les "ben_nir_psa" associés aux
-#'   "ben_idt_ano" fournis. Si `patients_ids` n'est pas fourni,
-#'   les ALD de tous les patients sont extraites.
+#'   "ben_idt_ano" fournis.
+#' @param output_table_name Character Optionnel. Si fourni, les résultats seront
+#'   sauvegardés dans une table portant ce nom dans la base de données au lieu
+#'   d'être retournés sous forme de data frame.
+#' @param conn DBI connection Une connexion à la base de données Oracle.
+#'   Si non fournie, une connexion est établie par défaut.
 #' @return Si output_table_name est NULL, retourne un data.frame contenant les
 #'   les ALDs actives sur la période. Si output_table_name est fourni,
 #'   sauvegarde les résultats dans la table spécifiée dans Oracle et
@@ -59,6 +63,7 @@
 #'   - MED_MTF_COD : Le code ICD 10 de la pathologie associée à l'ALD
 #'
 #' @examples
+#' \dontrun{
 #' start_date <- as.Date("2010-01-01")
 #' end_date <- as.Date("2010-01-03")
 #' starts_with_codes <- c("N04A")
@@ -68,6 +73,7 @@
 #'   end_date = end_date,
 #'   starts_with_codes = starts_with_codes
 #' )
+#' }
 #' @export
 extract_long_term_disease <- function(
     start_date = NULL,
@@ -116,15 +122,15 @@ extract_long_term_disease <- function(
   formatted_end_date <- format(end_date, "%Y-%m-%d")
 
   if (!is.null(icd_cod_starts_with)) {
-    print(glue("Extracting LTD status for ICD 10 codes starting \
+    print(glue::glue("Extracting LTD status for ICD 10 codes starting \
     with {paste(icd_cod_starts_with, collapse = ' or ')}..."))
   }
   if (!is.null(ald_numbers)) {
-    print(glue("Extracting LTD status for ALD numbers \
+    print(glue::glue("Extracting LTD status for ALD numbers \
     {paste(ald_numbers, collapse = ',')}..."))
   }
   if (is.null(icd_cod_starts_with) & is.null(ald_numbers)) {
-    print(glue("Extracting LTD status for all ICD 10 codes..."))
+    print(glue::glue("Extracting LTD status for all ICD 10 codes..."))
   }
 
   if (!is.null(patients_ids)) {
@@ -145,7 +151,7 @@ extract_long_term_disease <- function(
   if (!is.null(icd_cod_starts_with)) {
     starts_with_conditions <- sapply(
       icd_cod_starts_with,
-      function(code) glue("MED_MTF_COD LIKE '{code}%'")
+      function(code) glue::glue("MED_MTF_COD LIKE '{code}%'")
     )
     codes_conditions <- c(
       codes_conditions,
@@ -155,7 +161,7 @@ extract_long_term_disease <- function(
   if (!is.null(ald_numbers)) {
     codes_conditions <- c(
       codes_conditions,
-      glue("IMB_ALD_NUM IN ({paste(ald_numbers, collapse = ',')})")
+      glue::glue("IMB_ALD_NUM IN ({paste(ald_numbers, collapse = ',')})")
     )
   }
 
@@ -163,7 +169,7 @@ extract_long_term_disease <- function(
 
   imb_r <- dplyr::tbl(conn, "IR_IMB_R")
 
-  date_condition <- glue(
+  date_condition <- glue::glue(
     "IMB_ALD_DTD <= TO_DATE('{formatted_end_date}', 'YYYY-MM-DD') \
     AND IMB_ALD_DTF >= TO_DATE('{formatted_start_date}', 'YYYY-MM-DD')"
   )
@@ -210,7 +216,25 @@ extract_long_term_disease <- function(
       distinct()
   }
 
-  ald <- collect(query)
-  DBI::dbDisconnect(conn)
-  return(ald)
+  if (!is.null(patients_ids)) {
+    try(DBI::dbRemoveTable(conn, patients_ids_table_name), silent = TRUE)
+  }
+
+  if (!is.null(output_table_name)) {
+    result <- invisible(NULL)
+    message(paste("Results saved to table", table_name, "in the database."))
+  } else {
+    query <- dplyr::tbl(conn, table_name)
+    result <- dplyr::collect(query)
+  }
+
+  if (is.null(output_table_name)) {
+    try(DBI::dbRemoveTable(conn, table_name), silent = TRUE)
+  }
+
+  if (connection_opened) {
+    DBI::dbDisconnect(conn)
+  }
+
+  return(result)
 }
