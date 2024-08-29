@@ -24,12 +24,12 @@ TODO (figure à mettre dans man/figures)
 
 ## Liens utiles 
 
-- **lien vers cette page de la documentation** : [https://straymat.github.io/paresnds/index.html](https://straymat.github.io/paresnds/index.html)
+- **lien vers cette page de la documentation** : [https://straymat.github.io/sndsTools/index.html](https://straymat.github.io/sndsTools/index.html)
 
-- **Dépôt du code source** : [https://github.com/straymat/paresnds](https://github.com/straymat/paresnds)
+- **Dépôt du code source** : [https://github.com/straymat/sndsTools](https://github.com/straymat/sndsTools)
 
 - **Description des extractions et des tables de données créées** : TODO [Flux de données](articles/data.html)
 
-- **Prise en main rapide** : [Prise en main](articles/paresnds.html)
+- **Prise en main rapide** : [Prise en main](articles/sndsTools.html)
 
 - **Documentation des fonctions utilisées** : [Référence](reference/index.html)

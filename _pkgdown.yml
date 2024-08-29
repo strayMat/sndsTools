@@ -2,8 +2,8 @@ url: ~
 
 repo:
   url:
-    home: https://github.com/straymat/paresnds
-    source: https://github.com/strayMat/paresnds/tree/main/
+    home: https://github.com/straymat/sndsTools
+    source: https://github.com/strayMat/sndsTools/tree/main/
 template:
   bootstrap: 5
   bslib:
@@ -20,10 +20,12 @@ home:
     - citation
     - authors
 authors:
-  Anntoine Belloir:
+  Antoine Belloir:
     href: https://github.com/abelloir-zz
   Matthieu Doutreligne:
     href: https://info.m2dou.fr/
+  Thomas Soeiro: 
+    href: https://github.com/ThomasSoeiro
 reference:
 - title: Extraction SNDS
   desc: Fonctions pour extraire les données de soins individuelles à partir du SNDS.

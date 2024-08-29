@@ -21,13 +21,13 @@ knitr::opts_chunk$set(
 ## Installation
 
 ```{r, eval = FALSE}
-devtools::install_github("straymat/paresnds")
+devtools::install_github("straymat/sndsTools")
 ```
 
 ## Utilisation
 
 ```{r}
-library(paresnds)
+library(sndsTools)
 ```
 
 

@@ -1,5 +1,5 @@
 Title: Extraction de recours aux soins sur le SNDS en R 
-Package: paresnds
+Package: sndsTools
 Version: 0.0.0.1
 Date: 2024-06-13
 Depends: R (>= 3.5.0)
@@ -34,4 +34,4 @@ Suggests:
     knitr,
     rmarkdown
 VignetteBuilder: knitr
-URL: https://straymat.github.io/paresnds/
+URL: https://straymat.github.io/sndsTools/

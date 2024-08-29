@@ -78,7 +78,6 @@ extract_drug_dispenses <- function(
     patients_ids = NULL,
     output_table_name = NULL,
     conn = NULL) {
-
   if (is.null(start_date) || is.null(end_date)) {
     stop("Both start_date and end_date must be provided.")
   }
