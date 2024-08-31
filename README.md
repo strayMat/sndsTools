@@ -19,7 +19,7 @@ TODO (figure à mettre dans man/figures)
 ### Technologies
 
 - Langage de programmation : R
-- Packages utilisés : haven, here, dplyr, dbplyr, DBI, glue, lubridate
+- Packages utilisés : dplyr, dbplyr, DBI, glue, lubridate, progress
 
 
 ## Liens utiles 
@@ -33,3 +33,5 @@ TODO (figure à mettre dans man/figures)
 - **Prise en main rapide** : [Prise en main](articles/sndsTools.html)
 
 - **Documentation des fonctions utilisées** : [Référence](reference/index.html)
+
+- **Guide de contribution** : TODO [Guide de contribution](articles/contributing.html)
