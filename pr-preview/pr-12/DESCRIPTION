@@ -1,0 +1,41 @@
+Title: Extraction de recours aux soins sur le SNDS en R 
+Package: sndsTools
+Version: 0.0.0.1
+Date: 2024-06-13
+Depends: R (>= 3.5.0)
+Imports: 
+    dplyr (>= 1.0.7),
+    dbplyr (>= 2.1.1),
+    DBI,
+    glue,
+    lubridate,
+    progress
+Authors@R: c(
+    person(
+        "Antoine", "Belloir", ,
+        "antoine.belloir@icm-institute.org",
+        role = c("aut", "cre"),
+        ),
+    person(
+        "Matthieu", "Doutreligne", , 
+        "matt.dout@gmail.com", 
+        role = c("aut"),
+        comment = c(ORCID = "0000-0001-8072-9966")
+        ),
+    person(
+        "Soeiro", "Thomas", ,
+        role = c("aut")
+        )
+    )
+Description: Code d'extraction de données du SNDS.
+License: EUPL
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+Suggests: 
+    knitr,
+    rmarkdown,
+    testthat (>= 3.0.0),
+    duckdb (>= 1.0.0.2)
+VignetteBuilder: knitr
+URL: https://straymat.github.io/sndsTools/
