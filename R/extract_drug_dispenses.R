@@ -159,6 +159,12 @@ extract_drug_dispenses <- function(
   }
 
   if (!is.null(patients_ids)) {
+    stopifnot(
+      identical(
+        names(patients_ids), c("BEN_IDT_ANO", "BEN_NIR_PSA")
+      ),
+      !anyDuplicated(patients_ids)
+    )
     patients_ids_table_name <- "TMP_PATIENTS_IDS"
     try(DBI::dbRemoveTable(conn, patients_ids_table_name), silent = TRUE)
     DBI::dbWriteTable(conn, patients_ids_table_name, patients_ids)
