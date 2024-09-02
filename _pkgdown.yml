@@ -36,5 +36,6 @@ reference:
   - create_table_or_insert_from_query
   - get_first_non_archived_year
   - create_table_from_query
-  - initialize_connection
+  - connect_duckdb
+  - connect_oracle
 

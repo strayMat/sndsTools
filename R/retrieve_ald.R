@@ -15,7 +15,7 @@ extract_ald <- function(start_date = NULL,
                         output_table_name = NULL,
                         save_to_sas = NULL,
                         r_output_path = NULL) {
-  conn <- initialize_connection()
+  conn <- connect_oracle()
   formatted_start_date <- format(start_date, "%d/%m/%Y")
   formatted_end_date <- format(end_date, "%d/%m/%Y")
 

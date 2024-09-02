@@ -22,6 +22,12 @@
     <loc>/reference/connect_db.html</loc>
   </url>
   <url>
+    <loc>/reference/connect_duckdb.html</loc>
+  </url>
+  <url>
+    <loc>/reference/connect_oracle.html</loc>
+  </url>
+  <url>
     <loc>/reference/create_table_from_query.html</loc>
   </url>
   <url>
