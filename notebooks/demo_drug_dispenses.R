@@ -64,8 +64,7 @@ patients_ids_sample <- ref_ir_ben %>%
   select(BEN_IDT_ANO, BEN_NIR_PSA) %>%
   distinct() %>%
   head(10000) %>%
-  collect() %>%
-  rename_with(tolower)
+  collect()
 
 # Retrieve antidiabetic drug dispenses for
 # the given sample of patients over one month.
