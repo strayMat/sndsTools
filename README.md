@@ -1,5 +1,4 @@
-[![codecov.io](https://codecov.io/github/strayMat/sndsTools/coverage.svg?branch=main)]
-(https://codecov.io/github/strayMat/sndsTools?branch=main)
+[![codecov](https://codecov.io/gh/strayMat/sndsTools/graph/badge.svg?token=NKPHJFLAN8)](https://codecov.io/gh/strayMat/sndsTools)
 
 # Extraction de recours aux soins sur le SNDS en R 
 
