@@ -81,17 +81,13 @@ extract_drug_dispenses <- function(
     output_table_name = NULL,
     overwrite = FALSE,
     conn = NULL) {
-  if (is.null(start_date) || is.null(end_date)) {
-    stop("Both start_date and end_date must be provided.")
-  }
-
-  if (!inherits(start_date, "Date") || !inherits(end_date, "Date")) {
-    stop("start_date and end_date must be Date objects.")
-  }
-
-  if (start_date > end_date) {
-    stop("start_date must be earlier than or equal to end_date.")
-  }
+  stopifnot(
+    !is.null(start_date),
+    !is.null(end_date),
+    inherits(start_date, "Date"),
+    inherits(end_date, "Date"),
+    start_date <= end_date
+  )
 
   connection_opened <- FALSE
   if (is.null(conn)) {
