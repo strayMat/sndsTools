@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils.R
 \name{get_first_non_archived_year}
 \alias{get_first_non_archived_year}
-\title{Récupération de l'année non archivée la plus ancienne.}
+\title{Récupération de l'année non archivée la plus ancienne de la table ER_PRS_F.}
 \usage{
 get_first_non_archived_year(conn)
 }
@@ -13,5 +13,5 @@ get_first_non_archived_year(conn)
 Année non archivée la plus ancienne
 }
 \description{
-Récupération de l'année non archivée la plus ancienne.
+Récupération de l'année non archivée la plus ancienne de la table ER_PRS_F.
 }

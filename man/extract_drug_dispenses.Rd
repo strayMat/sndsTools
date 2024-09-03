@@ -8,14 +8,15 @@ extract_drug_dispenses(
   start_date = NULL,
   end_date = NULL,
   atc_cod_starts_with = NULL,
-  dis_dtd_lag_months = 7,
+  dis_dtd_lag_months = 6,
   patients_ids = NULL,
   output_table_name = NULL,
   conn = NULL
 )
 }
 \arguments{
-\item{start_date}{Date La date de début de la période
+\item{start_date}{Date. La date de début de l
+a période
 des délivrances des médicaments à extraire.}
 
 \item{end_date}{Date La date de fin de la période
@@ -25,16 +26,15 @@ des délivrances des médicaments à extraire.}
 par lesquels les délivrances de médicaments à extraire
 doivent commencer.}
 
-\item{dis_dtd_lag_months}{Integer Optionnel. Le nombre maximum de
+\item{dis_dtd_lag_months}{Integer. Le nombre maximum de
 mois de décalage de FLX_DIS_DTD par rapport à EXE_SOI DTD pris en compte
-pour récupérer les délivrances de médicaments. Par défaut, 7 mois.}
+pour récupérer les délivrances de médicaments. Par défaut, 6 mois.}
 
 \item{patients_ids}{data.frame Optionnel. Un data.frame contenant les
 paires d'identifiants des patients pour lesquels les délivrances de
 médicaments doivent être extraites. Les colonnes de ce data.frame
-doivent être "ben_idt_ano" et "ben_nir_psa" (en minuscules). Les
-"ben_nir_psa" doivent être tous les "ben_nir_psa" associés aux
-"ben_idt_ano" fournis.}
+doivent être "BEN_IDT_ANO" et "BEN_NIR_PSA". Les "BEN_NIR_PSA" doivent
+être tous les "BEN_NIR_PSA" associés aux "BEN_IDT_ANO" fournis.}
 
 \item{output_table_name}{Character Optionnel. Si fourni, les résultats seront
 sauvegardés dans une table portant ce nom dans la base de données au lieu
@@ -58,8 +58,8 @@ au répertoire (NIR) anonymisé.
 \item EXE_SOI_DTD : Date de la délivrance
 \item PHA_ACT_QSN : Quantité délivrée
 \item PHA_ATC_CLA : Code ATC du médicament délivré
-\item PHA_CIP_C13 : Code CIP du médicament délivré (nom dans la table
-IR_PHA_R : PHA_CIP_C13, nom dans la table ER_PRS_F : PHA_PRS_C13)
+\item PHA_PRS_C13 : Code CIP du médicament délivré (nom dans la table
+ER_PHA_F : PHA_PRS_C13, nom dans la table IR_PHA_R : PHA_CIP_C13)
 \item PSP_SPE_COD : Code de spécialité du professionnel de soin prescripteur
 (voir nomenclature IR_SPE_V)
 }
@@ -80,8 +80,16 @@ ATC sont extraites.
 Si patients_ids est fourni, seules les délivrances
 de médicaments pour les patients dont les identifiants
 sont dans patients_ids sont extraites. Dans le cas
-contraire, les délivrances de tous les patiens sont
+contraire, les délivrances de tous les patients sont
 extraites.
+}
+\details{
+Pour être à flux constant sur l'ensemble des années,
+il faut utiliser dis_dtd_lag_months = 27.
+Cela rallonge le temps d'extraction alors que l'impact sur
+l'extraction est minime car la Cnam extime que 99 \% des soins sont
+remontés à 6 mois c'est-à-dire pour dis_dtd_lag_months = 6).
+Voir https://documentation-snds.health-data-hub.fr/snds/formation_snds/initiation/schema_relationnel_snds.html#_3-3-dcir
 }
 \examples{
 \dontrun{
