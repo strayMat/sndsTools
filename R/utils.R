@@ -34,9 +34,6 @@ connect_duckdb <- function() {
 #' La fonction crée une table sous Oracle à partir d'une requête SQL.
 #' Si la table `output_table_name` existe déjà, elle est écrasée si
 #' le paramètre `overwrite` est TRUE.
-#' Le cas où l'on voudrait créer une table appelée `output_table_name` à partir
-#' d'une requête qui utilise une table déjà existante du même nom est pris
-#' en charge par la création d'une table temporaire.
 #' @param conn Connexion à la base de données
 #' @param output_table_name Nom de la table de sortie
 #' @param query Requête SQL
@@ -49,28 +46,19 @@ create_table_from_query <- function(conn = NULL,
                                     output_table_name = NULL,
                                     query = NULL,
                                     overwrite = FALSE) {
-  if (DBI::dbExistsTable(conn, output_table_name)) {
-    stopifnot(overwrite)
-  }
-  query <- dbplyr::sql_render(query)
-
-  temp_table_name <- paste0(output_table_name, "_TMP")
-  DBI::dbExecute(
-    conn,
-    glue::glue("CREATE TABLE {temp_table_name} AS {query}")
+  stopifnot(
+    !DBI::dbExistsTable(conn, output_table_name) || (DBI::dbExistsTable(conn, output_table_name) && overwrite)
   )
-
   if (DBI::dbExistsTable(conn, output_table_name) && overwrite) {
     DBI::dbRemoveTable(conn, output_table_name)
   }
-
+  query <- dbplyr::sql_render(query)
   DBI::dbExecute(
     conn,
     glue::glue(
-      "CREATE TABLE {output_table_name} AS SELECT * FROM {temp_table_name}"
+      "CREATE TABLE {output_table_name} AS {query}"
     )
   )
-  DBI::dbRemoveTable(conn, temp_table_name)
 }
 
 #' Insertion des résultats d'une requête SQL dans une table existante.
