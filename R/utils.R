@@ -92,6 +92,35 @@ insert_into_table_from_query <- function(
   )
 }
 
+#' Création d'une table à partir d'une requête SQL ou insertion des résultats dans une table existante.
+#' @param conn Connexion à la base de données
+#' @param output_table_name Nom de la table de sortie
+#' @param query Requête SQL
+#' @return NULL
+#'
+#' @export
+create_table_or_insert_from_query <- function(conn = NULL,
+                                              output_table_name = NULL,
+                                              query = NULL,
+                                              append = FALSE) {
+  query <- dbplyr::sql_render(query)
+  if (DBI::dbExistsTable(conn, output_table_name)) {
+    if (append) {
+      DBI::dbExecute(
+        conn,
+        glue::glue("INSERT INTO {output_table_name} {query}")
+      )
+    } else {
+      stop(glue::glue("La table {output_table_name} existe déjà et le paramètre append est FALSE."))
+    }
+  } else {
+    DBI::dbExecute(
+      conn,
+      glue::glue("CREATE TABLE {output_table_name} AS {query}")
+    )
+  }
+}
+
 #' Récupération de l'année non archivée la plus ancienne de la table ER_PRS_F.
 #' @param conn Connexion à la base de données
 #' @return Année non archivée la plus ancienne

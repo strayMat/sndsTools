@@ -44,6 +44,8 @@
 #' @param output_table_name Character Optionnel. Si fourni, les résultats seront
 #'   sauvegardés dans une table portant ce nom dans la base de données au lieu
 #'   d'être retournés sous forme de data frame.
+#' @param overwrite Logical. Indique si la table `output_table_name`
+#'  doit être écrasée dans le cas où elle existe déjà.
 #' @param conn DBI connection Une connexion à la base de données Oracle.
 #'   Si non fournie, une connexion est établie par défaut.
 #' @return Si output_table_name est NULL, retourne un data.frame contenant les
@@ -84,6 +86,7 @@ extract_drug_dispenses <- function(
     dis_dtd_lag_months = 6,
     patients_ids = NULL,
     output_table_name = NULL,
+    overwrite = FALSE,
     conn = NULL) {
   stopifnot(
     !is.null(start_date),
@@ -103,8 +106,16 @@ extract_drug_dispenses <- function(
     output_table_name_is_temp <- FALSE
     stopifnot(
       is.character(output_table_name),
-      !DBI::dbExistsTable(conn, output_table_name)
+      !DBI::dbExistsTable(conn, output_table_name) || (DBI::dbExistsTable(conn, output_table_name) && overwrite)
     )
+    if (DBI::dbExistsTable(conn, output_table_name) && overwrite) {
+      warning(
+        glue::glue(
+          "Table {output_table_name} already exists and will be overwritten."
+        )
+      )
+      DBI::dbRemoveTable(conn, output_table_name)
+    }
   } else {
     output_table_name_is_temp <- TRUE
     timestamp <- format(Sys.time(), "%Y%m%d_%H%M%S")
@@ -251,8 +262,7 @@ extract_drug_dispenses <- function(
       create_table_from_query(
         conn = conn,
         output_table_name = output_table_name,
-        query = query,
-        overwrite = FALSE
+        query = query
       )
     } else {
       insert_into_table_from_query(
