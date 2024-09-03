@@ -8,7 +8,8 @@ library(progress)
 # Source the following functions to run the code below:
 # - initialize_connection
 # - get_first_non_archived_year
-# - create_table_or_insert_from_query
+# - create_table_from_query
+# - insert_into_table_from_query
 # - extract_drug_dispenses
 
 # Retrieve all N04A drug dispenses over three days
@@ -16,19 +17,19 @@ library(progress)
 # identifier, since no patients_ids are provided
 start_date <- as.Date("2010-01-01")
 end_date <- as.Date("2010-01-03")
-starts_with_codes <- c("N04A")
+atc_cod_starts_with <- c("N04A")
 
 dispenses <- extract_drug_dispenses(
   start_date = start_date,
   end_date = end_date,
-  starts_with_codes = starts_with_codes
+  atc_cod_starts_with = atc_cod_starts_with
 )
 head(dispenses)
 
 # Same as above, but for N04A and N04B drug dispenses
 start_date <- as.Date("2010-01-01")
 end_date <- as.Date("2010-01-03")
-starts_with_codes <- c(
+atc_cod_starts_with <- c(
   "N04A",
   "N04B"
 )
@@ -36,7 +37,7 @@ starts_with_codes <- c(
 dispenses <- extract_drug_dispenses(
   start_date = start_date,
   end_date = end_date,
-  starts_with_codes = starts_with_codes
+  atc_cod_starts_with = atc_cod_starts_with
 )
 head(dispenses)
 
@@ -47,12 +48,12 @@ head(dispenses)
 conn <- initialize_connection()
 start_date <- as.Date("2010-01-01")
 end_date <- as.Date("2010-01-03")
-starts_with_codes <- c("N04A")
+atc_cod_starts_with <- c("N04A")
 
 dispenses <- extract_drug_dispenses(
   start_date = start_date,
   end_date = end_date,
-  starts_with_codes = starts_with_codes,
+  atc_cod_starts_with = atc_cod_starts_with,
   conn = conn
 )
 head(dispenses)
@@ -72,19 +73,19 @@ patients_ids_sample <- ref_ir_ben %>%
 # identifier, since patients_ids are provided
 start_date <- as.Date("2010-01-01")
 end_date <- as.Date("2010-01-31")
-starts_with_codes <- c("A10")
+atc_cod_starts_with <- c("A10")
 
 dispenses <- extract_drug_dispenses(
   start_date = start_date,
   end_date = end_date,
-  starts_with_codes = starts_with_codes,
+  atc_cod_starts_with = atc_cod_starts_with,
   patients_ids = patients_ids_sample
 )
 head(dispenses)
 
 # Retrieve all dispenses for the sample
 # of patients over one week. The fact that
-# no starts_with_codes are provided allows
+# no atc_cod_starts_with are provided allows
 # all dispenses to be retrieved.
 start_date <- as.Date("2010-01-01")
 end_date <- as.Date("2010-01-07")
