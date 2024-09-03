@@ -102,6 +102,7 @@ extract_drug_dispenses <- function(
     connection_opened <- TRUE
   }
 
+  timestamp <- format(Sys.time(), "%Y%m%d_%H%M%S")
   if (!is.null(output_table_name)) {
     output_table_name_is_temp <- FALSE
     stopifnot(
@@ -118,7 +119,6 @@ extract_drug_dispenses <- function(
     }
   } else {
     output_table_name_is_temp <- TRUE
-    timestamp <- format(Sys.time(), "%Y%m%d_%H%M%S")
     output_table_name <- glue::glue("TMP_DISP_{timestamp}")
   }
 

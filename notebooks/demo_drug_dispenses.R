@@ -6,7 +6,7 @@ library(glue)
 library(lubridate)
 library(progress)
 # Source the following functions to run the code below:
-# - initialize_connection
+# - connect_oracle
 # - get_first_non_archived_year
 # - create_table_from_query
 # - insert_into_table_from_query
@@ -25,13 +25,14 @@ dispenses <- extract_drug_dispenses(
   atc_cod_starts_with = atc_cod_starts_with
 )
 head(dispenses)
+stopifnot(all(grepl("^N04A", dispenses$PHA_ATC_CLA)))
 
-# Same as above, but for N04A and N04B drug dispenses
+# Same as above, but for N04A and A10 drug dispenses
 start_date <- as.Date("2010-01-01")
 end_date <- as.Date("2010-01-03")
 atc_cod_starts_with <- c(
   "N04A",
-  "N04B"
+  "A10"
 )
 
 dispenses <- extract_drug_dispenses(
@@ -40,12 +41,13 @@ dispenses <- extract_drug_dispenses(
   atc_cod_starts_with = atc_cod_starts_with
 )
 head(dispenses)
+stopifnot(all(grepl("^N04A|^A10", dispenses$PHA_ATC_CLA)))
 
 # You can also provide your own database connection
 # to the extract_drug_dispenses function. This is useful
 # to avoid opening and closing a connection for each
 # extraction function call.
-conn <- initialize_connection()
+conn <- connect_oracle()
 start_date <- as.Date("2010-01-01")
 end_date <- as.Date("2010-01-03")
 atc_cod_starts_with <- c("N04A")
@@ -57,15 +59,22 @@ dispenses <- extract_drug_dispenses(
   conn = conn
 )
 head(dispenses)
+stopifnot(all(grepl("^N04A", dispenses$PHA_ATC_CLA)))
+# Close the connection
+DBI::dbDisconnect(conn)
 
 # Create a sample of patients
-conn <- initialize_connection()
+conn <- connect_oracle()
 ref_ir_ben <- tbl(conn, "IR_BEN_R")
 patients_ids_sample <- ref_ir_ben %>%
   select(BEN_IDT_ANO, BEN_NIR_PSA) %>%
   distinct() %>%
   head(10000) %>%
   collect()
+head(patients_ids_sample)
+# Close the connection
+DBI::dbDisconnect(conn)
+
 
 # Retrieve antidiabetic drug dispenses for
 # the given sample of patients over one month.
@@ -82,6 +91,8 @@ dispenses <- extract_drug_dispenses(
   patients_ids = patients_ids_sample
 )
 head(dispenses)
+stopifnot(all(dispenses$BEN_IDT_ANO %in% patients_ids_sample$BEN_IDT_ANO))
+stopifnot(all(grepl("^A10", dispenses$PHA_ATC_CLA)))
 
 # Retrieve all dispenses for the sample
 # of patients over one week. The fact that
@@ -96,6 +107,7 @@ dispenses <- extract_drug_dispenses(
   patients_ids = patients_ids_sample
 )
 head(dispenses)
+stopifnot(all(dispenses$BEN_IDT_ANO %in% patients_ids_sample$BEN_IDT_ANO))
 
 # If the output_table_name argument is provided,
 # the output will be stored in a table with the
@@ -104,16 +116,23 @@ head(dispenses)
 start_date <- as.Date("2010-01-01")
 end_date <- as.Date("2010-01-15")
 output_table_name <- "TMP_DISPENSES"
-print(dbExistsTable(conn, output_table_name))
 
+conn <- connect_oracle()
+print(dbExistsTable(conn, output_table_name))
 extract_drug_dispenses(
   start_date = start_date,
   end_date = end_date,
   patients_ids = patients_ids_sample,
   output_table_name = output_table_name
 )
-
 print(dbExistsTable(conn, output_table_name))
+
+# The output table can be queried using SQL
 query <- glue("SELECT COUNT(*) FROM {output_table_name}")
 result <- dbGetQuery(conn, query)
 print(result)
+
+# You may want to delete the output table if it is no longer needed
+DBI::dbRemoveTable(conn, output_table_name)
+# Close the connection
+DBI::dbDisconnect(conn)
