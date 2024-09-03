@@ -1,5 +1,5 @@
 #' Extraction des délivrances de médicaments.
-#'
+#' @description
 #' Cette fonction permet d'extraire les délivrances de médicaments.
 #' Les délivrances dont les dates EXE_SOI_DTD sont comprises
 #' entre start_date et end_date (incluses) sont extraites.
@@ -15,19 +15,27 @@
 #' Si patients_ids est fourni, seules les délivrances
 #' de médicaments pour les patients dont les identifiants
 #' sont dans patients_ids sont extraites. Dans le cas
-#' contraire, les délivrances de tous les patiens sont
+#' contraire, les délivrances de tous les patients sont
 #' extraites.
+#' @details
+#' Pour être à flux constant sur l'ensemble des années,
+#' il faut utiliser dis_dtd_lag_months = 27.
+#' Cela rallonge le temps d'extraction alors que l'impact sur
+#' l'extraction est minime car la Cnam extime que 99 % des soins sont
+#' remontés à 6 mois c'est-à-dire pour dis_dtd_lag_months = 6).
+#' Voir https://documentation-snds.health-data-hub.fr/snds/formation_snds/initiation/schema_relationnel_snds.html#_3-3-dcir
 #'
-#' @param start_date Date La date de début de la période
+#' @param start_date Date. La date de début de l
+#' a période
 #'   des délivrances des médicaments à extraire.
 #' @param end_date Date La date de fin de la période
 #'   des délivrances des médicaments à extraire.
 #' @param atc_cod_starts_with Character vector Optionnel. Les codes ATC
 #'   par lesquels les délivrances de médicaments à extraire
 #'   doivent commencer.
-#' @param dis_dtd_lag_months Integer Optionnel. Le nombre maximum de
+#' @param dis_dtd_lag_months Integer. Le nombre maximum de
 #'   mois de décalage de FLX_DIS_DTD par rapport à EXE_SOI DTD pris en compte
-#'   pour récupérer les délivrances de médicaments. Par défaut, 7 mois.
+#'   pour récupérer les délivrances de médicaments. Par défaut, 6 mois.
 #' @param patients_ids data.frame Optionnel. Un data.frame contenant les
 #'   paires d'identifiants des patients pour lesquels les délivrances de
 #'   médicaments doivent être extraites. Les colonnes de ce data.frame
@@ -36,9 +44,6 @@
 #' @param output_table_name Character Optionnel. Si fourni, les résultats seront
 #'   sauvegardés dans une table portant ce nom dans la base de données au lieu
 #'   d'être retournés sous forme de data frame.
-#' @param overwrite Logical Optionnel. Si TRUE, et si output_table_name est
-#'   fourni et que la table de sortie existe déjà, la table de sortie sera
-#'   écrasée. Par défaut, FALSE.
 #' @param conn DBI connection Une connexion à la base de données Oracle.
 #'   Si non fournie, une connexion est établie par défaut.
 #' @return Si output_table_name est NULL, retourne un data.frame contenant les
@@ -76,10 +81,9 @@ extract_drug_dispenses <- function(
     start_date = NULL,
     end_date = NULL,
     atc_cod_starts_with = NULL,
-    dis_dtd_lag_months = 7,
+    dis_dtd_lag_months = 6,
     patients_ids = NULL,
     output_table_name = NULL,
-    overwrite = FALSE,
     conn = NULL) {
   stopifnot(
     !is.null(start_date),
@@ -97,42 +101,33 @@ extract_drug_dispenses <- function(
 
   if (!is.null(output_table_name)) {
     output_table_name_is_temp <- FALSE
-    if (!is.character(output_table_name)) {
-      stop("output_table_name must be a character string")
-    }
-    if (DBI::dbExistsTable(conn, output_table_name)) {
-      if (overwrite) {
-        warning(
-          glue::glue(
-            "Table {output_table_name} already exists.
-            It will be overwritten."
-          )
-        )
-      } else {
-        stop(
-          glue::glue(
-            "Table {output_table_name} already exists.
-            Set overwrite = TRUE to overwrite it."
-          )
-        )
-      }
-    }
+    stopifnot(
+      is.character(output_table_name),
+      !DBI::dbExistsTable(conn, output_table_name)
+    )
   } else {
     output_table_name_is_temp <- TRUE
     timestamp <- format(Sys.time(), "%Y%m%d_%H%M%S")
     output_table_name <- glue::glue("TMP_DISP_{timestamp}")
   }
-  try(
-    DBI::dbRemoveTable(conn, output_table_name),
-    silent = TRUE
-  )
-  dis_dtd_end_date <- lubridate::floor_date(
-    lubridate::add_with_rollback(
-      end_date,
-      months(dis_dtd_lag_months)
-    ),
-    "months"
-  )
+
+  if (!is.null(patients_ids)) {
+    stopifnot(
+      identical(
+        names(patients_ids),
+        c("BEN_IDT_ANO", "BEN_NIR_PSA")
+      ),
+      !anyDuplicated(patients_ids)
+    )
+    patients_ids_table_name <- glue::glue("TMP_PATIENTS_IDS_{timestamp}")
+    DBI::dbWriteTable(conn, patients_ids_table_name, patients_ids)
+  }
+
+
+  dis_dtd_end_date <-
+    end_date |>
+    lubridate::add_with_rollback(months(dis_dtd_lag_months)) |>
+    lubridate::floor_date("months")
 
   start_year <- lubridate::year(start_date)
   end_year <- lubridate::year(dis_dtd_end_date)
@@ -146,8 +141,7 @@ extract_drug_dispenses <- function(
   if (!is.null(atc_cod_starts_with)) {
     print(
       glue::glue(
-        "Extracting drug dispenses with ATC codes starting with
-        {paste(atc_cod_starts_with, collapse = ' or ')}..."
+        "Extracting drug dispenses with ATC codes starting with {paste(atc_cod_starts_with, collapse = ' or ')}..."
       )
     )
   } else {
@@ -158,33 +152,21 @@ extract_drug_dispenses <- function(
     )
   }
 
-  if (!is.null(patients_ids)) {
-    stopifnot(
-      identical(
-        names(patients_ids), c("BEN_IDT_ANO", "BEN_NIR_PSA")
-      ),
-      !anyDuplicated(patients_ids)
-    )
-    patients_ids_table_name <- "TMP_PATIENTS_IDS"
-    try(DBI::dbRemoveTable(conn, patients_ids_table_name), silent = TRUE)
-    DBI::dbWriteTable(conn, patients_ids_table_name, patients_ids)
-  }
   pb <- progress::progress_bar$new(
-    format = "Extracting :year1 (going from :year2 to :year3)
-    [:bar] :percent in :elapsed (eta: :eta)",
+    format = "Extracting :year1 (going from :year2 to :year3) [:bar] :percent in :elapsed (eta: :eta)",
     total = (end_year - start_year + 1), clear = FALSE, width = 80
   )
   pb$tick(0)
   for (year in start_year:end_year) {
     pb$tick(tokens = list(year1 = year, year2 = start_year, year3 = end_year))
 
-    arc_suffix <- ifelse(
-      year < first_non_archived_year,
-      glue::glue("_{year}"),
-      ""
-    )
-    er_prs_f <- dplyr::tbl(conn, glue::glue("ER_PRS_F{arc_suffix}"))
-    er_pha_f <- dplyr::tbl(conn, glue::glue("ER_PHA_F{arc_suffix}"))
+    if (year < first_non_archived_year) {
+      er_prs_f <- dplyr::tbl(conn, glue::glue("ER_PRS_F_{year}"))
+      er_pha_f <- dplyr::tbl(conn, glue::glue("ER_PHA_F_{year}"))
+    } else {
+      er_prs_f <- dplyr::tbl(conn, "ER_PRS_F")
+      er_pha_f <- dplyr::tbl(conn, "ER_PHA_F")
+    }
     ir_pha_r <- dplyr::tbl(conn, "IR_PHA_R")
 
     starts_with_conditions <- vapply(
@@ -197,13 +179,13 @@ extract_drug_dispenses <- function(
 
     if (year == end_year) {
       dis_dtd_condition <- glue::glue(
-        "FLX_DIS_DTD >= DATE '{year}-01-01'
+        "FLX_DIS_DTD >= DATE '{year}-02-01'
         AND FLX_DIS_DTD <= DATE '{formatted_dis_dtd_end_date}'"
       )
     } else {
       dis_dtd_condition <- glue::glue(
-        "FLX_DIS_DTD >= DATE '{year}-01-01'
-      AND FLX_DIS_DTD <= DATE '{year}-12-01'"
+        "FLX_DIS_DTD >= DATE '{year}-02-01'
+      AND FLX_DIS_DTD <= DATE '{year + 1}-01-01'"
       )
     }
     soi_dtd_condition <- glue::glue(
@@ -227,28 +209,9 @@ extract_drug_dispenses <- function(
       dplyr::inner_join(er_pha_f, by = dcir_join_keys) |>
       dplyr::inner_join(ir_pha_r, by = c("PHA_PRS_C13" = "PHA_CIP_C13")) |>
       dplyr::filter(
-        dbplyr::sql(soi_dtd_condition)
+        dbplyr::sql(soi_dtd_condition),
+        dbplyr::sql(dis_dtd_condition)
       )
-
-    # Dans les tables archivées par années, toutes les délivrances dont les
-    # dates EXE_SOI_DTD appartiennent à l'année d'archivage en question sont
-    # présentes. Il n'est donc pas nécessaire de filtrer sur les dates de
-    # remontée FLX_DIS_DTD pour les années archivées, sauf si la dernière année
-    # à extraire est atteinte, auquel cas il faut prendre en compte le seuil
-    # pour les dates de remontée FLX_DIS_DTD défini par dis_dtd_end_date.
-    # A l'inverse, pour la table  ER_PRS_F non archivée, un découpage selon
-    # les dates de remontée FLX_DIS_DTD est mis en place pour faire une
-    # extraction année par année.
-    # NB : Ce choix induit une quasi exhaustivité des données pour les années
-    # archivées, par opposition aux années très récentes pour lesquelles les
-    # données ne sont pas toutes remontées. Il pourrait être souhaitable
-    # d'introduire un filtre pour être à flux constant sur l'ensemble des années
-    if ((year >= first_non_archived_year) || (year == end_year)) {
-      query <- query |>
-        dplyr::filter(
-          dbplyr::sql(dis_dtd_condition)
-        )
-    }
 
     if (!is.null(atc_cod_starts_with)) {
       query <- query |>
@@ -284,31 +247,34 @@ extract_drug_dispenses <- function(
         dplyr::distinct()
     }
 
-    create_table_or_insert_from_query(
-      conn = conn,
-      output_table_name = output_table_name,
-      query = query
-    )
+    if (!DBI::dbExistsTable(conn, output_table_name)) {
+      create_table_from_query(
+        conn = conn,
+        output_table_name = output_table_name,
+        query = query,
+        overwrite = FALSE
+      )
+    } else {
+      insert_into_table_from_query(
+        conn = conn,
+        output_table_name = output_table_name,
+        query = query
+      )
+    }
   }
 
   if (!is.null(patients_ids)) {
-    try(
-      DBI::dbRemoveTable(conn, patients_ids_table_name),
-      silent = TRUE
-    )
+    DBI::dbRemoveTable(conn, patients_ids_table_name)
   }
 
   if (output_table_name_is_temp) {
     query <- dplyr::tbl(conn, output_table_name)
     result <- dplyr::collect(query)
-    try(
-      DBI::dbRemoveTable(conn, output_table_name),
-      silent = TRUE
-    )
+    DBI::dbRemoveTable(conn, output_table_name)
   } else {
     result <- invisible(NULL)
     message(
-      glue::glue("Results saved to table {output_table_name} in the database.")
+      glue::glue("Results saved to table {output_table_name} in Oracle.")
     )
   }
 
