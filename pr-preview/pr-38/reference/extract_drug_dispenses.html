@@ -14,7 +14,7 @@ ATC sont extraites.
 Si patients_ids est fourni, seules les délivrances
 de médicaments pour les patients dont les identifiants
 sont dans patients_ids sont extraites. Dans le cas
-contraire, les délivrances de tous les patiens sont
+contraire, les délivrances de tous les patients sont
 extraites."><meta property="og:description" content="Cette fonction permet d'extraire les délivrances de médicaments.
 Les délivrances dont les dates EXE_SOI_DTD sont comprises
 entre start_date et end_date (incluses) sont extraites.
@@ -30,7 +30,7 @@ ATC sont extraites.
 Si patients_ids est fourni, seules les délivrances
 de médicaments pour les patients dont les identifiants
 sont dans patients_ids sont extraites. Dans le cas
-contraire, les délivrances de tous les patiens sont
+contraire, les délivrances de tous les patients sont
 extraites."></head><body>
     <a href="#main" class="visually-hidden-focusable">Passer au contenu</a>
 
@@ -86,7 +86,7 @@ ATC sont extraites.
 Si patients_ids est fourni, seules les délivrances
 de médicaments pour les patients dont les identifiants
 sont dans patients_ids sont extraites. Dans le cas
-contraire, les délivrances de tous les patiens sont
+contraire, les délivrances de tous les patients sont
 extraites.</p>
     </div>
 
@@ -96,9 +96,10 @@ extraites.</p>
 <span>  start_date <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  end_date <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  atc_cod_starts_with <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  dis_dtd_lag_months <span class="op">=</span> <span class="fl">7</span>,</span>
+<span>  dis_dtd_lag_months <span class="op">=</span> <span class="fl">6</span>,</span>
 <span>  patients_ids <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  output_table_name <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  overwrite <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  conn <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -108,7 +109,8 @@ extraites.</p>
 
 
 <dl><dt id="arg-start-date">start_date<a class="anchor" aria-label="anchor" href="#arg-start-date"></a></dt>
-<dd><p>Date La date de début de la période
+<dd><p>Date. La date de début de l
+a période
 des délivrances des médicaments à extraire.</p></dd>
 
 
@@ -124,24 +126,28 @@ doivent commencer.</p></dd>
 
 
 <dt id="arg-dis-dtd-lag-months">dis_dtd_lag_months<a class="anchor" aria-label="anchor" href="#arg-dis-dtd-lag-months"></a></dt>
-<dd><p>Integer Optionnel. Le nombre maximum de
+<dd><p>Integer. Le nombre maximum de
 mois de décalage de FLX_DIS_DTD par rapport à EXE_SOI DTD pris en compte
-pour récupérer les délivrances de médicaments. Par défaut, 7 mois.</p></dd>
+pour récupérer les délivrances de médicaments. Par défaut, 6 mois.</p></dd>
 
 
 <dt id="arg-patients-ids">patients_ids<a class="anchor" aria-label="anchor" href="#arg-patients-ids"></a></dt>
 <dd><p>data.frame Optionnel. Un data.frame contenant les
 paires d'identifiants des patients pour lesquels les délivrances de
 médicaments doivent être extraites. Les colonnes de ce data.frame
-doivent être "ben_idt_ano" et "ben_nir_psa" (en minuscules). Les
-"ben_nir_psa" doivent être tous les "ben_nir_psa" associés aux
-"ben_idt_ano" fournis.</p></dd>
+doivent être "BEN_IDT_ANO" et "BEN_NIR_PSA". Les "BEN_NIR_PSA" doivent
+être tous les "BEN_NIR_PSA" associés aux "BEN_IDT_ANO" fournis.</p></dd>
 
 
 <dt id="arg-output-table-name">output_table_name<a class="anchor" aria-label="anchor" href="#arg-output-table-name"></a></dt>
 <dd><p>Character Optionnel. Si fourni, les résultats seront
 sauvegardés dans une table portant ce nom dans la base de données au lieu
 d'être retournés sous forme de data frame.</p></dd>
+
+
+<dt id="arg-overwrite">overwrite<a class="anchor" aria-label="anchor" href="#arg-overwrite"></a></dt>
+<dd><p>Logical. Indique si la table <code>output_table_name</code>
+doit être écrasée dans le cas où elle existe déjà.</p></dd>
 
 
 <dt id="arg-conn">conn<a class="anchor" aria-label="anchor" href="#arg-conn"></a></dt>
@@ -163,11 +169,20 @@ au répertoire (NIR) anonymisé.</p></li>
 <li><p>EXE_SOI_DTD : Date de la délivrance</p></li>
 <li><p>PHA_ACT_QSN : Quantité délivrée</p></li>
 <li><p>PHA_ATC_CLA : Code ATC du médicament délivré</p></li>
-<li><p>PHA_CIP_C13 : Code CIP du médicament délivré (nom dans la table
-IR_PHA_R : PHA_CIP_C13, nom dans la table ER_PRS_F : PHA_PRS_C13)</p></li>
+<li><p>PHA_PRS_C13 : Code CIP du médicament délivré (nom dans la table
+ER_PHA_F : PHA_PRS_C13, nom dans la table IR_PHA_R : PHA_CIP_C13)</p></li>
 <li><p>PSP_SPE_COD : Code de spécialité du professionnel de soin prescripteur
 (voir nomenclature IR_SPE_V)</p></li>
 </ul></div>
+    <div class="section level2">
+    <h2 id="d-tails">Détails<a class="anchor" aria-label="anchor" href="#d-tails"></a></h2>
+    <p>Pour être à flux constant sur l'ensemble des années,
+il faut utiliser dis_dtd_lag_months = 27.
+Cela rallonge le temps d'extraction alors que l'impact sur
+l'extraction est minime car la Cnam extime que 99 % des soins sont
+remontés à 6 mois c'est-à-dire pour dis_dtd_lag_months = 6).
+Voir https://documentation-snds.health-data-hub.fr/snds/formation_snds/initiation/schema_relationnel_snds.html#_3-3-dcir</p>
+    </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Exemples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>

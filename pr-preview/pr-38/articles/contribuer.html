@@ -66,8 +66,8 @@
 
     
     
-<p>Ce projet est un effort communautaire. N’importe est le bienvenue
-pour contribuer. Les règles de décision et de gouvernance sont
+<p>Ce projet est un effort communautaire. Les nouveaux contributeurs
+sont les bienvenus. Les règles de décision et de gouvernance sont
 détaillées dans le document <a href="articles/gouvernance.html">Gouvernance</a>.</p>
 <div class="section level2">
 <h2 id="différente-manière-de-contribuer">Différente manière de contribuer<a class="anchor" aria-label="anchor" href="#diff%C3%A9rente-mani%C3%A8re-de-contribuer"></a>
@@ -82,7 +82,7 @@ solution.</p>
 <div class="section level3">
 <h3 id="créer-une-nouvelle-issue">Créer une nouvelle issue<a class="anchor" aria-label="anchor" href="#cr%C3%A9er-une-nouvelle-issue"></a>
 </h3>
-<p>Si vous avez trouver un bug, ou si vous avez une question sur une
+<p>Si vous avez trouvé un bug, ou si vous avez une question sur une
 fonctionnalité, vous pouvez <a href="https://github.com/strayMat/sndsTools/issues/new/choose" class="external-link">créer une
 nouvelle issue</a>.</p>
 <p>En cas de bug, il est important de donner un exemple reproductible <a href="https://www.tidyverse.org/help/#reprex" class="external-link"><code>reprex</code></a>.
@@ -118,7 +118,7 @@ vous pouvez créer une <a href="https://github.com/strayMat/sndsTools/pulls" cla
 une nouvelle pull request, il est important de s’assurer qu’aucun autre
 contributeur n’a déjà posé la même question ou contribuer sur le même
 thème.</p></li>
-<li><p>Etre patient : Les contributeurs sont bénévoles, effectue la
+<li><p>Etre patient : Les contributeurs sont bénévoles, effectuent la
 plupart du travail sur leur temps libre et peuvent ne pas répondre
 immédiatement à vos questions.</p></li>
 <li><p>Etre respectueux : Les contributeurs viennent de différents
@@ -149,11 +149,11 @@ avant d’être intégrée.</li>
 <div class="section level2">
 <h2 id="comment-contribuer-concrètement">Comment contribuer concrètement ?<a class="anchor" aria-label="anchor" href="#comment-contribuer-concr%C3%A8tement"></a>
 </h2>
-<p>La manière de contribuer à ce projet exigeant de modifier du code
-constitue à forker le dépôt principal sur GitHub, puis à soumettre une
-“pull request” (PR).</p>
+<p>Afin de modifier le code, il est au préalable nécessaire de forker le
+dépôt principal sur GitHub, puis de soumettre une “pull request”
+(PR).</p>
 <p>Dans les premières étapes, nous expliquons comment installer
-localement sdnsTools et comment configurer votre dépôt git :</p>
+localement {sndsTools} et comment configurer votre dépôt git :</p>
 <ol style="list-style-type: decimal">
 <li><p><a href="https://github.com/join" class="external-link">Créez un compte sur GitHub</a>
 si vous n’en avez pas déjà un.</p></li>
@@ -162,7 +162,7 @@ du projet</a> : cliquez sur le bouton “Fork” en haut de la page. Cela
 crée une copie du code sur votre compte GitHub. Pour plus de détails sur
 la manière de forker un dépôt, consultez <a href="https://help.github.com/articles/fork-a-repo/" class="external-link">ce
 guide</a>.</p></li>
-<li><p>Clonez votre fork du dépôt sdnsTools depuis votre compte GitHub
+<li><p>Clonez votre fork du dépôt {sndsTools} depuis votre compte GitHub
 sur votre disque local :</p></li>
 </ol>
 <div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">git</span> clone git@github.com:YourLogin/sndsTools.git</span>
@@ -175,12 +175,12 @@ les dépendances de développement. Dans la console R, lancez :</li>
 <code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">install</span><span class="op">(</span>dependencies <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <ol start="5" style="list-style-type: decimal">
 <li>Ajoutez le dépôt <code>upstream remote</code>. Cela sauvegarde la
-référence du dépôt sndsTools, que vous pouvez utiliser pour garder votre
-version synchronisée avec les derniers changements.</li>
+référence du dépôt {sndsTools}, que vous pouvez utiliser pour garder
+votre version synchronisée avec les derniers changements.</li>
 </ol>
 <div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">git</span> remote add upstream git@github.com:strayMat/sndsTools.git</span></code></pre></div>
 <p>Vous devriez désormais avoir une installation fonctionnelle de
-sndsTools, et votre dépôt git correctement configuré. Vous pouvez
+{sndsTools}, et votre dépôt git correctement configuré. Vous pouvez
 maintenant commencer à contribuer en modifiant le code et en soumettant
 une PR.</p>
 <ol start="6" style="list-style-type: decimal">
