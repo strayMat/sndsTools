@@ -30,28 +30,54 @@ connect_duckdb <- function() {
 }
 
 #' Création d'une table à partir d'une requête SQL.
+#' @details
+#' La fonction crée une table sous Oracle à partir d'une requête SQL.
+#' Si la table `output_table_name` existe déjà, elle est écrasée si
+#' le paramètre `overwrite` est TRUE.
+#' @param conn Connexion à la base de données
+#' @param output_table_name Nom de la table de sortie
+#' @param query Requête SQL
+#' @param overwrite Logical. Indique si la table `output_table_name`
+#' doit être écrasée dans le cas où elle existe déjà.
+#' @return NULL
+#'
+#' @export
+create_table_from_query <- function(conn = NULL,
+                                    output_table_name = NULL,
+                                    query = NULL,
+                                    overwrite = FALSE) {
+  stopifnot(
+    !DBI::dbExistsTable(conn, output_table_name) || (DBI::dbExistsTable(conn, output_table_name) && overwrite)
+  )
+  if (DBI::dbExistsTable(conn, output_table_name) && overwrite) {
+    DBI::dbRemoveTable(conn, output_table_name)
+  }
+  query <- dbplyr::sql_render(query)
+  DBI::dbExecute(
+    conn,
+    glue::glue(
+      "CREATE TABLE {output_table_name} AS {query}"
+    )
+  )
+}
+
+#' Insertion des résultats d'une requête SQL dans une table existante.
 #' @param conn Connexion à la base de données
 #' @param output_table_name Nom de la table de sortie
 #' @param query Requête SQL
 #' @return NULL
 #'
 #' @export
-create_table_from_query <- function(conn = NULL,
-                                    output_table_name = NULL,
-                                    query = NULL) {
+insert_into_table_from_query <- function(
+    conn = NULL,
+    output_table_name = NULL,
+    query = NULL) {
+  stopifnot(DBI::dbExistsTable(conn, output_table_name))
   query <- dbplyr::sql_render(query)
-  temp_table_name <- paste0(output_table_name, "_TMP")
-  DBI::dbExecute(conn, glue::glue("CREATE TABLE {temp_table_name} AS {query}"))
-  if (DBI::dbExistsTable(conn, output_table_name)) {
-    DBI::dbRemoveTable(conn, output_table_name)
-  }
   DBI::dbExecute(
     conn,
-    glue::glue(
-      "CREATE TABLE {output_table_name} AS SELECT * FROM {temp_table_name}"
-    )
+    glue::glue("INSERT INTO {output_table_name} {query}")
   )
-  DBI::dbRemoveTable(conn, temp_table_name)
 }
 
 #' Création d'une table à partir d'une requête SQL ou insertion des résultats dans une table existante.
@@ -83,7 +109,7 @@ create_table_or_insert_from_query <- function(conn = NULL,
   }
 }
 
-#' Récupération de l'année non archivée la plus ancienne.
+#' Récupération de l'année non archivée la plus ancienne de la table ER_PRS_F.
 #' @param conn Connexion à la base de données
 #' @return Année non archivée la plus ancienne
 #'

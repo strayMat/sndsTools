@@ -1,5 +1,5 @@
 #' Extraction des délivrances de médicaments.
-#'
+#' @description
 #' Cette fonction permet d'extraire les délivrances de médicaments.
 #' Les délivrances dont les dates EXE_SOI_DTD sont comprises
 #' entre start_date et end_date (incluses) sont extraites.
@@ -15,28 +15,36 @@
 #' Si patients_ids est fourni, seules les délivrances
 #' de médicaments pour les patients dont les identifiants
 #' sont dans patients_ids sont extraites. Dans le cas
-#' contraire, les délivrances de tous les patiens sont
+#' contraire, les délivrances de tous les patients sont
 #' extraites.
+#' @details
+#' Pour être à flux constant sur l'ensemble des années,
+#' il faut utiliser dis_dtd_lag_months = 27
+#' Cela rallonge le temps d'extraction alors que l'impact sur
+#' l'extraction est minime car la Cnam estime que 99 % des soins sont
+#' remontés à 6 mois c'est-à-dire pour dis_dtd_lag_months = 6
+#' Voir https://documentation-snds.health-data-hub.fr/snds/formation_snds/initiation/schema_relationnel_snds.html#_3-3-dcir
 #'
-#' @param start_date Date La date de début de la période
+#' @param start_date Date. La date de début de la période
 #'   des délivrances des médicaments à extraire.
 #' @param end_date Date La date de fin de la période
 #'   des délivrances des médicaments à extraire.
 #' @param atc_cod_starts_with Character vector Optionnel. Les codes ATC
 #'   par lesquels les délivrances de médicaments à extraire
 #'   doivent commencer.
-#' @param dis_dtd_lag_months Integer Optionnel. Le nombre maximum de
+#' @param dis_dtd_lag_months Integer. Le nombre maximum de
 #'   mois de décalage de FLX_DIS_DTD par rapport à EXE_SOI DTD pris en compte
-#'   pour récupérer les délivrances de médicaments. Par défaut, 7 mois.
+#'   pour récupérer les délivrances de médicaments. Par défaut, 6 mois.
 #' @param patients_ids data.frame Optionnel. Un data.frame contenant les
 #'   paires d'identifiants des patients pour lesquels les délivrances de
 #'   médicaments doivent être extraites. Les colonnes de ce data.frame
-#'   doivent être "ben_idt_ano" et "ben_nir_psa" (en minuscules). Les
-#'   "ben_nir_psa" doivent être tous les "ben_nir_psa" associés aux
-#'   "ben_idt_ano" fournis.
+#'   doivent être "BEN_IDT_ANO" et "BEN_NIR_PSA". Les "BEN_NIR_PSA" doivent
+#'   être tous les "BEN_NIR_PSA" associés aux "BEN_IDT_ANO" fournis.
 #' @param output_table_name Character Optionnel. Si fourni, les résultats seront
 #'   sauvegardés dans une table portant ce nom dans la base de données au lieu
 #'   d'être retournés sous forme de data frame.
+#' @param overwrite Logical. Indique si la table `output_table_name`
+#'  doit être écrasée dans le cas où elle existe déjà.
 #' @param conn DBI connection Une connexion à la base de données Oracle.
 #'   Si non fournie, une connexion est établie par défaut.
 #' @return Si output_table_name est NULL, retourne un data.frame contenant les
@@ -52,8 +60,8 @@
 #'   - EXE_SOI_DTD : Date de la délivrance
 #'   - PHA_ACT_QSN : Quantité délivrée
 #'   - PHA_ATC_CLA : Code ATC du médicament délivré
-#'   - PHA_CIP_C13 : Code CIP du médicament délivré (nom dans la table
-#'    IR_PHA_R : PHA_CIP_C13, nom dans la table ER_PRS_F : PHA_PRS_C13)
+#'   - PHA_PRS_C13 : Code CIP du médicament délivré (nom dans la table
+#'    ER_PHA_F : PHA_PRS_C13, nom dans la table IR_PHA_R : PHA_CIP_C13)
 #'   - PSP_SPE_COD : Code de spécialité du professionnel de soin prescripteur
 #'   (voir nomenclature IR_SPE_V)
 #'
@@ -74,44 +82,63 @@ extract_drug_dispenses <- function(
     start_date = NULL,
     end_date = NULL,
     atc_cod_starts_with = NULL,
-    dis_dtd_lag_months = 7,
+    dis_dtd_lag_months = 6,
     patients_ids = NULL,
     output_table_name = NULL,
+    overwrite = FALSE,
     conn = NULL) {
-  if (is.null(start_date) || is.null(end_date)) {
-    stop("Both start_date and end_date must be provided.")
-  }
-
-  if (!inherits(start_date, "Date") || !inherits(end_date, "Date")) {
-    stop("start_date and end_date must be Date objects.")
-  }
-
-  if (start_date > end_date) {
-    stop("start_date must be earlier than or equal to end_date.")
-  }
+  stopifnot(
+    !is.null(start_date),
+    !is.null(end_date),
+    inherits(start_date, "Date"),
+    inherits(end_date, "Date"),
+    start_date <= end_date
+  )
 
   connection_opened <- FALSE
   if (is.null(conn)) {
-    conn <- initialize_connection()
+    conn <- connect_oracle()
     connection_opened <- TRUE
   }
 
+  timestamp <- format(Sys.time(), "%Y%m%d_%H%M%S")
   if (!is.null(output_table_name)) {
-    if (!is.character(output_table_name)) {
-      stop("output_table_name must be a character string")
-    }
-    table_name <- output_table_name
-    if (DBI::dbExistsTable(conn, table_name)) {
-      warning(paste("Table", table_name, "already exists. It will be overwritten."))
+    output_table_name_is_temp <- FALSE
+    stopifnot(
+      is.character(output_table_name),
+      !DBI::dbExistsTable(conn, output_table_name) || (DBI::dbExistsTable(conn, output_table_name) && overwrite)
+    )
+    if (DBI::dbExistsTable(conn, output_table_name) && overwrite) {
+      warning(
+        glue::glue(
+          "Table {output_table_name} already exists and will be overwritten."
+        )
+      )
+      DBI::dbRemoveTable(conn, output_table_name)
     }
   } else {
-    table_name <- paste0("TMP_DISP_", format(Sys.time(), "%Y%m%d_%H%M%S"))
+    output_table_name_is_temp <- TRUE
+    output_table_name <- glue::glue("TMP_DISP_{timestamp}")
   }
-  try(
-    DBI::dbRemoveTable(conn, table_name),
-    silent = TRUE
-  )
-  dis_dtd_end_date <- end_date + lubridate::days(30 * dis_dtd_lag_months)
+
+  if (!is.null(patients_ids)) {
+    stopifnot(
+      identical(
+        names(patients_ids),
+        c("BEN_IDT_ANO", "BEN_NIR_PSA")
+      ),
+      !anyDuplicated(patients_ids)
+    )
+    patients_ids_table_name <- glue::glue("TMP_PATIENTS_IDS_{timestamp}")
+    DBI::dbWriteTable(conn, patients_ids_table_name, patients_ids)
+  }
+
+
+  dis_dtd_end_date <-
+    end_date |>
+    lubridate::add_with_rollback(months(dis_dtd_lag_months)) |>
+    lubridate::floor_date("months")
+
   start_year <- lubridate::year(start_date)
   end_year <- lubridate::year(dis_dtd_end_date)
 
@@ -124,8 +151,7 @@ extract_drug_dispenses <- function(
   if (!is.null(atc_cod_starts_with)) {
     print(
       glue::glue(
-        "Extracting drug dispenses with ATC codes starting with \
-        {paste(atc_cod_starts_with, collapse = ' or ')}..."
+        "Extracting drug dispenses with ATC codes starting with {paste(atc_cod_starts_with, collapse = ' or ')}..."
       )
     )
   } else {
@@ -136,51 +162,45 @@ extract_drug_dispenses <- function(
     )
   }
 
-  if (!is.null(patients_ids)) {
-    patients_ids <- patients_ids %>%
-      rename(
-        BEN_IDT_ANO = ben_idt_ano,
-        BEN_NIR_PSA = ben_nir_psa
-      )
-    patients_ids_table_name <- "TMP_PATIENTS_IDS"
-    try(DBI::dbRemoveTable(conn, patients_ids_table_name), silent = TRUE)
-    DBI::dbWriteTable(conn, patients_ids_table_name, patients_ids)
-  }
   pb <- progress::progress_bar$new(
-    format = "Extracting :year1 (going from :year2 to :year3) \
-    [:bar] :percent in :elapsed (eta: :eta)",
+    format = "Extracting :year1 (going from :year2 to :year3) [:bar] :percent in :elapsed (eta: :eta)",
     total = (end_year - start_year + 1), clear = FALSE, width = 80
   )
   pb$tick(0)
   for (year in start_year:end_year) {
     pb$tick(tokens = list(year1 = year, year2 = start_year, year3 = end_year))
 
-    arc_suffix <- ifelse(year < first_non_archived_year, paste0("_", year), "")
-    er_prs_f <- dplyr::tbl(conn, glue::glue("ER_PRS_F{arc_suffix}"))
-    er_pha_f <- dplyr::tbl(conn, glue::glue("ER_PHA_F{arc_suffix}"))
+    if (year < first_non_archived_year) {
+      er_prs_f <- dplyr::tbl(conn, glue::glue("ER_PRS_F_{year}"))
+      er_pha_f <- dplyr::tbl(conn, glue::glue("ER_PHA_F_{year}"))
+    } else {
+      er_prs_f <- dplyr::tbl(conn, "ER_PRS_F")
+      er_pha_f <- dplyr::tbl(conn, "ER_PHA_F")
+    }
     ir_pha_r <- dplyr::tbl(conn, "IR_PHA_R")
 
-    starts_with_conditions <- sapply(
+    starts_with_conditions <- vapply(
       atc_cod_starts_with,
-      function(code) glue::glue("PHA_ATC_CLA LIKE '{code}%'")
+      function(code) glue::glue("PHA_ATC_CLA LIKE '{code}%'"),
+      character(1)
     )
     atc_conditions <- paste(starts_with_conditions, collapse = " OR ")
     atc_conditions <- glue::glue("({atc_conditions})")
 
     if (year == end_year) {
       dis_dtd_condition <- glue::glue(
-        "FLX_DIS_DTD >= TO_DATE('{year}-01-01', 'YYYY-MM-DD') \
-      AND FLX_DIS_DTD <= TO_DATE('{formatted_dis_dtd_end_date}', 'YYYY-MM-DD')"
+        "FLX_DIS_DTD >= DATE '{year}-02-01'
+        AND FLX_DIS_DTD <= DATE '{formatted_dis_dtd_end_date}'"
       )
     } else {
       dis_dtd_condition <- glue::glue(
-        "FLX_DIS_DTD >= TO_DATE('{year}-01-01', 'YYYY-MM-DD') \
-      AND FLX_DIS_DTD <= TO_DATE('{year}-12-31', 'YYYY-MM-DD')"
+        "FLX_DIS_DTD >= DATE '{year}-02-01'
+      AND FLX_DIS_DTD <= DATE '{year + 1}-01-01'"
       )
     }
     soi_dtd_condition <- glue::glue(
-      "EXE_SOI_DTD >= TO_DATE('{formatted_start_date}', 'YYYY-MM-DD') \
-      AND EXE_SOI_DTD <= TO_DATE('{formatted_end_date}', 'YYYY-MM-DD')"
+      "EXE_SOI_DTD >= DATE '{formatted_start_date}'
+      AND EXE_SOI_DTD <= DATE '{formatted_end_date}'"
     )
 
     dcir_join_keys <- c(
@@ -195,70 +215,74 @@ extract_drug_dispenses <- function(
       "REM_TYP_AFF"
     )
 
-    query <- er_prs_f %>%
-      inner_join(er_pha_f, by = dcir_join_keys) %>%
-      inner_join(ir_pha_r, by = c("PHA_PRS_C13" = "PHA_CIP_C13")) %>%
-      filter(
-        sql(dis_dtd_condition),
-        sql(soi_dtd_condition)
+    query <- er_prs_f |>
+      dplyr::inner_join(er_pha_f, by = dcir_join_keys) |>
+      dplyr::inner_join(ir_pha_r, by = c("PHA_PRS_C13" = "PHA_CIP_C13")) |>
+      dplyr::filter(
+        dbplyr::sql(soi_dtd_condition),
+        dbplyr::sql(dis_dtd_condition)
       )
 
     if (!is.null(atc_cod_starts_with)) {
-      query <- query %>%
-        filter(sql(atc_conditions))
+      query <- query |>
+        dplyr::filter(dbplyr::sql(atc_conditions))
     }
 
     cols_to_select <- c(
       "EXE_SOI_DTD",
       "PHA_ACT_QSN",
       "PHA_ATC_CLA",
-      "PHA_CIP_C13",
+      "PHA_PRS_C13",
       "PSP_SPE_COD"
     )
 
-    query <- query %>%
-      mutate(PHA_CIP_C13 = PHA_PRS_C13) %>%
-      select(
+    query <- query |>
+      dplyr::select(
         BEN_NIR_PSA,
-        all_of(cols_to_select)
-      ) %>%
-      distinct()
+        dplyr::all_of(cols_to_select)
+      ) |>
+      dplyr::distinct()
 
     if (!is.null(patients_ids)) {
       patients_ids_table <- dplyr::tbl(conn, patients_ids_table_name)
-      patients_ids_table <- patients_ids_table %>%
-        select(BEN_IDT_ANO, BEN_NIR_PSA) %>%
-        distinct()
-      query <- query %>%
-        inner_join(patients_ids_table, by = "BEN_NIR_PSA") %>%
-        select(
+      patients_ids_table <- patients_ids_table |>
+        dplyr::select(BEN_IDT_ANO, BEN_NIR_PSA) |>
+        dplyr::distinct()
+      query <- query |>
+        dplyr::inner_join(patients_ids_table, by = "BEN_NIR_PSA") |>
+        dplyr::select(
           BEN_IDT_ANO,
-          all_of(cols_to_select)
-        ) %>%
-        distinct()
+          dplyr::all_of(cols_to_select)
+        ) |>
+        dplyr::distinct()
     }
 
-    create_table_or_insert_from_query(
-      conn = conn,
-      output_table_name = table_name,
-      query = query
-    )
+    if (DBI::dbExistsTable(conn, output_table_name)) {
+      DBI::dbExecute(
+        conn,
+        glue::glue("INSERT INTO {output_table_name} {query}")
+      )
+    } else {
+      DBI::dbExecute(
+        conn,
+        glue::glue("CREATE TABLE {output_table_name} AS {query}")
+      )
+    }
   }
 
   if (!is.null(patients_ids)) {
-    try(DBI::dbRemoveTable(conn, patients_ids_table_name), silent = TRUE)
+    DBI::dbRemoveTable(conn, patients_ids_table_name)
   }
 
-  if (!is.null(output_table_name)) {
-    result <- invisible(NULL)
-    message(paste("Results saved to table", table_name, "in the database."))
-  } else {
-    query <- dplyr::tbl(conn, table_name)
+  if (output_table_name_is_temp) {
+    query <- dplyr::tbl(conn, output_table_name)
     result <- dplyr::collect(query)
-  }
-
-  if (is.null(output_table_name)) {
-    try(DBI::dbRemoveTable(conn, table_name), silent = TRUE)
+    DBI::dbRemoveTable(conn, output_table_name)
+  } else {
+    result <- invisible(NULL)
+    message(
+      glue::glue("Results saved to table {output_table_name} in Oracle.")
+    )
   }
 
   if (connection_opened) {
