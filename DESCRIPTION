@@ -36,6 +36,8 @@ Suggests:
     knitr,
     rmarkdown,
     testthat (>= 3.0.0),
-    duckdb (>= 1.0.0.2)
+    duckdb (>= 1.0.0.2),
+    styler,
+    lintr
 VignetteBuilder: knitr
 URL: https://straymat.github.io/sndsTools/

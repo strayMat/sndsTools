@@ -8,6 +8,12 @@
 
 Ce package R permet d'extraire des données de recours aux soins du SNDS (Système National des Données de Santé) pour une population donnée. 
 
+## Historique
+
+Ce projet a été initié suite à la rencontre de plusieurs utilisateurs du SNDS lors du congrès Emois en mars 2024. Il est actuellement en phase de développement actif.
+
+C'est un projet communautaire, évolutif par nature, qui vise à rassembler les différents utilisateurs du SNDS. 
+
 ## Contexte technique
 
 ### Données 
@@ -30,10 +36,12 @@ TODO (figure à mettre dans man/figures)
 
 - **Dépôt du code source** : [https://github.com/straymat/sndsTools](https://github.com/straymat/sndsTools)
 
-- **Description des extractions et des tables de données créées** : TODO [Flux de données](articles/data.html)
+- **Description des extractions et des tables de données créées** : TODO [Flux de données](data.html)
 
-- **Prise en main rapide** : [Prise en main](articles/sndsTools.html)
+- **Prise en main rapide** : [Prise en main](sndsTools.html)
 
-- **Documentation des fonctions utilisées** : [Référence](reference/index.html)
+- [Référence](reference/index.html) des fonctions utilisées
 
-- **Guide de contribution** : TODO [Guide de contribution](articles/contributing.html)
+- [Guide de contribution](contributing.html)
+
+- [Principes de gouvernance](gouvernance.html)
