@@ -134,3 +134,17 @@ get_first_non_archived_year <- function(conn) {
     as.character(max(as.numeric(archived_years)) + 1)
   return(first_non_archived_year)
 }
+
+#' Récupération des statistiques des tables
+#' @param conn Connexion à la base de données
+#' @param table Chaine de caractère indiquant le nom d'une table
+#' @references https://docs.oracle.com/en/database/oracle/oracle-database/19/arpls/DBMS_STATS.html#GUID-CA6A56B9-0540-45E9-B1D7-D78769B7714C
+gather_table_stats <- function(conn, table) {
+  user <- dbGetQuery(con, "SELECT user FROM dual;")
+  user <- dbQuoteIdentifier(con, user$USER)
+  dbExecute(
+    conn,
+    "BEGIN DBMS_STATS.GATHER_TABLE_STATS(?, ?); END;",
+    params = list(user, table)
+  )
+}
