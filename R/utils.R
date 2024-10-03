@@ -117,7 +117,7 @@ create_table_or_insert_from_query <- function(conn = NULL,
 get_first_non_archived_year <- function(conn) {
   user_synonyms <- dbGetQuery(
       conn,
-      "SELECT synonym_name FROM user_synonyms WHERE synonym_name LIKE 'ER_PRS_F_%';"
+      "SELECT synonym_name FROM user_synonyms WHERE synonym_name LIKE 'ER_PRS_F_%'"
     )
   max_archived_year <-
     user_synonyms$SYNONYM_NAME |>
