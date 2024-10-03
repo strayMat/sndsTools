@@ -121,7 +121,7 @@ get_first_non_archived_year <- function(conn) {
     )
   max_archived_year <-
     user_synonyms$SYNONYM_NAME |>
-    sub("ER_PRS_F_", "", x = _) |>
+    sub("ER_PRS_F_", "", x = _, fixed = TRUE) |>
     as.numeric() |>
     max()
   max_archived_year + 1
