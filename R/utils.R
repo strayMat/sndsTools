@@ -115,22 +115,14 @@ create_table_or_insert_from_query <- function(conn = NULL,
 #'
 #' @export
 get_first_non_archived_year <- function(conn) {
-  tables_names <-
-    dbGetQuery(
+  user_synonyms <- dbGetQuery(
       conn,
-      "SELECT object_name FROM all_objects WHERE object_name LIKE 'ER_PRS_F_%'"
+      "SELECT synonym_name FROM user_synonyms WHERE synonym_name LIKE 'ER_PRS_F_%'"
     )
-  dbGetQuery(
-    conn,
-    "SELECT object_name FROM all_objects WHERE object_name LIKE 'ER_PRS_F_%'"
-  )
-
-  archived_years <- tables_names |>
-    dplyr::mutate(year = substr(OBJECT_NAME, 10, 13)) |>
-    filter(year != "TEST") |>
-    dplyr::pull(year)
-
-  first_non_archived_year <-
-    as.character(max(as.numeric(archived_years)) + 1)
-  return(first_non_archived_year)
+  max_archived_year <-
+    user_synonyms$SYNONYM_NAME |>
+    sub("ER_PRS_F_", "", x = _, fixed = TRUE) |>
+    as.numeric() |>
+    max()
+  max_archived_year + 1
 }
