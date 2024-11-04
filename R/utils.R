@@ -120,8 +120,7 @@ get_first_non_archived_year <- function(conn) {
       "SELECT synonym_name FROM user_synonyms WHERE synonym_name LIKE 'ER_PRS_F_%'"
     )
   max_archived_year <-
-    user_synonyms$SYNONYM_NAME |>
-    sub("ER_PRS_F_", "", x = _, fixed = TRUE) |>
+    sub("ER_PRS_F_", "", x = user_synonyms$SYNONYM_NAME, fixed = TRUE) |>
     as.numeric() |>
     max()
   max_archived_year + 1
