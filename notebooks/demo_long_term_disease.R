@@ -65,7 +65,7 @@ start_date <- as.Date("2010-01-01")
 end_date <- as.Date("2010-12-31")
 ald_numbers <- c(8)
 output_table_name <- "TMP_LTD"
-print(dbExistsTable(conn, output_table_name))
+print(DBI::dbExistsTable(conn, output_table_name))
 
 extract_long_term_disease(
   start_date = start_date,
@@ -74,7 +74,7 @@ extract_long_term_disease(
   output_table_name = output_table_name
 )
 
-print(dbExistsTable(conn, output_table_name))
-query <- glue("SELECT COUNT(*) FROM {output_table_name}")
-result <- dbGetQuery(conn, query)
+print(DBI::dbExistsTable(conn, output_table_name))
+query <- glue::glue("SELECT COUNT(*) FROM {output_table_name}")
+result <- DBI::dbGetQuery(conn, query)
 print(result)
