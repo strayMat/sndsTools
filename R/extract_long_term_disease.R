@@ -1,5 +1,5 @@
 #' Extraction des Affections Longue Durée (ALD)
-#'
+#' @description
 #' Cette fonction permet d'extraire des ALD actives au
 #' moins un jour sur une période donnée.
 #' Les ALD dont l'intersection [IMB_ALD_DTD, IMB_ALD_DTF]
@@ -37,12 +37,13 @@
 #' @param patients_ids data.frame Optionnel. Un data.frame contenant les
 #'   paires d'identifiants des patients pour lesquels les délivrances de
 #'   médicaments doivent être extraites. Les colonnes de ce data.frame
-#'   doivent être "ben_idt_ano" et "ben_nir_psa" (en minuscules). Les
-#'   "ben_nir_psa" doivent être tous les "ben_nir_psa" associés aux
-#'   "ben_idt_ano" fournis.
+#'   doivent être "BEN_IDT_ANO" et "BEN_NIR_PSA". Les "BEN_NIR_PSA" doivent
+#'   être tous les "BEN_NIR_PSA" associés aux "BEN_IDT_ANO" fournis.
 #' @param output_table_name Character Optionnel. Si fourni, les résultats seront
 #'   sauvegardés dans une table portant ce nom dans la base de données au lieu
 #'   d'être retournés sous forme de data frame.
+#' @param overwrite Logical. Indique si la table `output_table_name`
+#'  doit être écrasée dans le cas où elle existe déjà.
 #' @param conn DBI connection Une connexion à la base de données Oracle.
 #'   Si non fournie, une connexion est établie par défaut.
 #' @return Si output_table_name est NULL, retourne un data.frame contenant les
@@ -66,12 +67,12 @@
 #' \dontrun{
 #' start_date <- as.Date("2010-01-01")
 #' end_date <- as.Date("2010-01-03")
-#' starts_with_codes <- c("N04A")
+#' icd_cod_starts_with <- c("G20")
 #'
-#' dispenses <- extract_drug_dispenses(
+#' long_term_disease <- extract_long_term_disease(
 #'   start_date = start_date,
 #'   end_date = end_date,
-#'   starts_with_codes = starts_with_codes
+#'   icd_cod_starts_with = icd_cod_starts_with
 #' )
 #' }
 #' @export
@@ -84,39 +85,51 @@ extract_long_term_disease <- function(
     patients_ids = NULL,
     output_table_name = NULL,
     conn = NULL) {
-  if (is.null(start_date) || is.null(end_date)) {
-    stop("Both start_date and end_date must be provided.")
-  }
-
-  if (!inherits(start_date, "Date") || !inherits(end_date, "Date")) {
-    stop("start_date and end_date must be Date objects.")
-  }
-
-  if (start_date > end_date) {
-    stop("start_date must be earlier than or equal to end_date.")
-  }
+  stopifnot(
+    !is.null(start_date),
+    !is.null(end_date),
+    inherits(start_date, "Date"),
+    inherits(end_date, "Date"),
+    start_date <= end_date
+  )
 
   connection_opened <- FALSE
   if (is.null(conn)) {
-    conn <- initialize_connection()
+    conn <- connect_oracle()
     connection_opened <- TRUE
   }
 
+  timestamp <- format(Sys.time(), "%Y%m%d_%H%M%S")
   if (!is.null(output_table_name)) {
-    if (!is.character(output_table_name)) {
-      stop("output_table_name must be a character string")
-    }
-    table_name <- output_table_name
-    if (DBI::dbExistsTable(conn, table_name)) {
-      warning(paste("Table", table_name, "already exists. It will be overwritten."))
+    output_table_name_is_temp <- FALSE
+    stopifnot(
+      is.character(output_table_name),
+      !DBI::dbExistsTable(conn, output_table_name) || (DBI::dbExistsTable(conn, output_table_name) && overwrite)
+    )
+    if (DBI::dbExistsTable(conn, output_table_name) && overwrite) {
+      warning(
+        glue::glue(
+          "Table {output_table_name} already exists and will be overwritten."
+        )
+      )
+      DBI::dbRemoveTable(conn, output_table_name)
     }
   } else {
-    table_name <- paste0("TMP_LTD_", format(Sys.time(), "%Y%m%d_%H%M%S"))
+    output_table_name_is_temp <- TRUE
+    output_table_name <- glue::glue("TMP_LTD_{timestamp}")
   }
-  try(
-    DBI::dbRemoveTable(conn, table_name),
-    silent = TRUE
-  )
+
+  if (!is.null(patients_ids)) {
+    stopifnot(
+      identical(
+        names(patients_ids),
+        c("BEN_IDT_ANO", "BEN_NIR_PSA")
+      ),
+      !anyDuplicated(patients_ids)
+    )
+    patients_ids_table_name <- glue::glue("TMP_PATIENTS_IDS_{timestamp}")
+    DBI::dbWriteTable(conn, patients_ids_table_name, patients_ids)
+  }
 
   formatted_start_date <- format(start_date, "%Y-%m-%d")
   formatted_end_date <- format(end_date, "%Y-%m-%d")
@@ -131,20 +144,6 @@ extract_long_term_disease <- function(
   }
   if (is.null(icd_cod_starts_with) & is.null(ald_numbers)) {
     print(glue::glue("Extracting LTD status for all ICD 10 codes..."))
-  }
-
-  if (!is.null(patients_ids)) {
-    patients_ids <- patients_ids %>%
-      rename(
-        BEN_IDT_ANO = ben_idt_ano,
-        BEN_NIR_PSA = ben_nir_psa
-      )
-    patients_ids_table_name <- "TMP_PATIENTS_IDS"
-    try(
-      DBI::dbRemoveTable(conn, patients_ids_table_name),
-      silent = TRUE
-    )
-    DBI::dbWriteTable(conn, patients_ids_table_name, patients_ids)
   }
 
   codes_conditions <- list()
@@ -170,19 +169,19 @@ extract_long_term_disease <- function(
   imb_r <- dplyr::tbl(conn, "IR_IMB_R")
 
   date_condition <- glue::glue(
-    "IMB_ALD_DTD <= TO_DATE('{formatted_end_date}', 'YYYY-MM-DD') \
-    AND IMB_ALD_DTF >= TO_DATE('{formatted_start_date}', 'YYYY-MM-DD')"
+    "IMB_ALD_DTD <= DATE '{formatted_end_date}'
+    AND IMB_ALD_DTF >= DATE '{formatted_start_date}'"
   )
 
-  query <- imb_r %>%
-    filter(
+  query <- imb_r |>
+    dplyr::filter(
       sql(date_condition),
       !(IMB_ETM_NAT %in% excl_etm_nat)
     )
 
   if (!is.null(icd_cod_starts_with) | !is.null(ald_numbers)) {
-    query <- query %>%
-      filter(
+    query <- query |>
+      dplyr::filter(
         sql(codes_conditions)
       )
   }
@@ -195,41 +194,48 @@ extract_long_term_disease <- function(
     "MED_MTF_COD"
   )
 
-  query <- query %>%
-    select(
+  query <- query |>
+    dplyr::select(
       BEN_NIR_PSA,
       all_of(cols_to_select)
-    ) %>%
-    distinct()
+    ) |>
+    dplyr::distinct()
 
   if (!is.null(patients_ids)) {
     patients_ids_table <- dplyr::tbl(conn, patients_ids_table_name)
-    patients_ids_table <- patients_ids_table %>%
-      select(BEN_IDT_ANO, BEN_NIR_PSA) %>%
-      distinct()
-    query <- query %>%
-      inner_join(patients_ids_table, by = "BEN_NIR_PSA") %>%
-      select(
+    patients_ids_table <- patients_ids_table |>
+      dplyr::select(BEN_IDT_ANO, BEN_NIR_PSA) |>
+      dplyr::distinct()
+    query <- query |>
+      dplyr::inner_join(patients_ids_table, by = "BEN_NIR_PSA") |>
+      dplyr::select(
         BEN_IDT_ANO,
         all_of(cols_to_select)
-      ) %>%
-      distinct()
+      ) |>
+      dplyr::distinct()
   }
+
+  query <- query |>
+    dbplyr::sql_render()
+
+  DBI::dbExecute(
+    conn,
+    glue::glue("CREATE TABLE {output_table_name} AS {query}")
+  )
 
   if (!is.null(patients_ids)) {
-    try(DBI::dbRemoveTable(conn, patients_ids_table_name), silent = TRUE)
+    DBI::dbRemoveTable(conn, patients_ids_table_name)
   }
 
-  if (!is.null(output_table_name)) {
-    result <- invisible(NULL)
-    message(paste("Results saved to table", table_name, "in the database."))
-  } else {
-    query <- dplyr::tbl(conn, table_name)
+  if (output_table_name_is_temp) {
+    query <- dplyr::tbl(conn, output_table_name)
     result <- dplyr::collect(query)
-  }
-
-  if (is.null(output_table_name)) {
-    try(DBI::dbRemoveTable(conn, table_name), silent = TRUE)
+    DBI::dbRemoveTable(conn, output_table_name)
+  } else {
+    result <- invisible(NULL)
+    message(
+      glue::glue("Results saved to table {output_table_name} in Oracle.")
+    )
   }
 
   if (connection_opened) {
