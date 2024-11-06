@@ -30,7 +30,7 @@ head(ald)
 # to the extract_drug_dispenses function. This is useful
 # to avoid opening and closing a connection for each
 # extraction function call.
-conn <- initialize_connection()
+conn <- connect_oracle()
 start_date <- as.Date("2010-01-01")
 end_date <- as.Date("2010-12-31")
 icd_cod_starts_with <- c("G20")
