@@ -47,13 +47,39 @@ extract_hospital_consultations <- function(start_date,
                                            prestation_codes = NULL,
                                            patient_ids = NULL,
                                            output_table_name = NULL,
+                                           overwrite = FALSE,
                                            conn = NULL) {
+  stopifnot(
+    !is.null(start_date),
+    !is.null(end_date),
+    inherits(start_date, "Date"),
+    inherits(end_date, "Date"),
+    start_date <= end_date
+  )
+  connection_opened <- FALSE
   if (is.null((conn))) {
-    conn <- connect_oracle() # Connect to database
+    conn <- connect_oracle()
+    connection_opened <- TRUE
   }
-  if (is.null(output_table_name)) {
-    output_table_name <-
-      paste0("TMP_DISP_", format(Sys.time(), "%Y%m%d_%H%M%S"))
+
+  timestamp <- format(Sys.time(), "%Y%m%d_%H%M%S")
+  if (!is.null(output_table_name)) {
+    output_table_name_is_temp <- FALSE
+    stopifnot(
+      is.character(output_table_name),
+      !DBI::dbExistsTable(conn, output_table_name) || (DBI::dbExistsTable(conn, output_table_name) && overwrite)
+    )
+    if (DBI::dbExistsTable(conn, output_table_name) && overwrite) {
+      warning(
+        glue::glue(
+          "Table {output_table_name} already exists and will be overwritten."
+        )
+      )
+      DBI::dbRemoveTable(conn, output_table_name)
+    }
+  } else {
+    output_table_name_is_temp <- TRUE
+    output_table_name <- glue::glue("TMP_DISP_{timestamp}")
   }
 
   start_year <- lubridate::year(start_date)
@@ -95,22 +121,22 @@ extract_hospital_consultations <- function(start_date,
         ENT_DAT_RET == "0",
         IAS_RET == "0"
       ) |>
-      select(ETA_NUM, SEQ_NUM, NIR_ANO_17, EXE_SOI_DTD) |>
-      distinct()
+      dplyr::select(ETA_NUM, SEQ_NUM, NIR_ANO_17, EXE_SOI_DTD) |>
+      dplyr::distinct()
 
     fcstc <-
       dplyr::tbl(conn, glue::glue("T_MCO{formatted_year}FCSTC")) |>
-      select(ETA_NUM, SEQ_NUM, ACT_COD, EXE_SPE) |>
-      distinct()
+      dplyr::select(ETA_NUM, SEQ_NUM, ACT_COD, EXE_SPE) |>
+      dplyr::distinct()
 
     date_condition <- glue::glue(
       "EXE_SOI_DTD <= DATE '{formatted_end_date}' AND EXE_SOI_DTD >= DATE '{formatted_start_date}'"
     )
     ace <- cstc |>
       filter(sql(date_condition)) |>
-      left_join(fcstc, by = c("ETA_NUM", "SEQ_NUM")) |>
-      select(NIR_ANO_17, EXE_SOI_DTD, ACT_COD, EXE_SPE) |>
-      distinct()
+      dplyr::left_join(fcstc, by = c("ETA_NUM", "SEQ_NUM")) |>
+      dplyr::select(NIR_ANO_17, EXE_SOI_DTD, ACT_COD, EXE_SPE) |>
+      dplyr::distinct()
 
     if (!is.null(spe_codes)) {
       ace <- ace |>
@@ -123,9 +149,9 @@ extract_hospital_consultations <- function(start_date,
     }
 
     if (!is.null(patient_ids)) {
-      patient_ids_table <- tbl(conn, patient_ids_table_name)
+      patient_ids_table <- dplyr::tbl(conn, patient_ids_table_name)
       query <- patient_ids_table |>
-        inner_join(ace,
+        dplyr::inner_join(ace,
           by = c("BEN_NIR_PSA" = "NIR_ANO_17"),
           keep = TRUE
         )
@@ -143,22 +169,38 @@ extract_hospital_consultations <- function(start_date,
         c("NIR_ANO_17", "EXE_SOI_DTD", "ACT_COD", "EXE_SPE")
     }
     query <- query |>
-      select(all_of(selected_columns)) |>
-      distinct()
+      dplyr::select(dplyr::all_of(selected_columns)) |>
+      dplyr::distinct()
 
-
-    if (!is.null(output_table_name)) {
-      create_table_or_insert_from_query(
-        conn = conn,
-        output_table_name = output_table_name,
-        query = query,
-        append = (year != start_year)
+    if (DBI::dbExistsTable(conn, output_table_name)) {
+      query <- dbplyr::sql_render(query)
+      DBI::dbExecute(
+        conn,
+        glue::glue("INSERT INTO {output_table_name} {query}")
+      )
+    } else {
+      query <- dbplyr::sql_render(query)
+      DBI::dbExecute(
+        conn,
+        glue::glue("CREATE TABLE {output_table_name} AS {query}")
       )
     }
   }
 
-  query <- dplyr::tbl(conn, output_table_name)
-  consultations <- dplyr::collect(query)
+  if (output_table_name_is_temp) {
+    query <- dplyr::tbl(conn, output_table_name)
+    result <- dplyr::collect(query)
+    DBI::dbRemoveTable(conn, output_table_name)
+  } else {
+    result <- invisible(NULL)
+    message(
+      glue::glue("Results saved to table {output_table_name} in Oracle.")
+    )
+  }
 
-  return(consultations)
+  if (connection_opened) {
+    DBI::dbDisconnect(conn)
+  }
+
+  return(result)
 }

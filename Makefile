@@ -21,3 +21,5 @@ lint:
 test:
 	Rscript -e 'devtools::test()'
 	
+styler: 
+	Rscript -e 'styler::style_pkg()'
