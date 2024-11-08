@@ -70,6 +70,8 @@ consultations_med_g <- extract_consultations_erprsf(
     end_date = end_date,
     pse_spe_codes = pse_spe_codes,
     prestation_codes = prestation_codes,
+    output_table_name = output_table_name,
+    conn = conn
 )
 print(dbExistsTable(conn, output_table_name))
 # The output table can be queried using SQL
