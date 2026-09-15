@@ -44,28 +44,22 @@ connect_oracle <- function() {
 #' @description
 #' Sur le portail, chaque utilisateur appartient à un profil (`PROFIL_XXX`)
 #' qui est le schéma hébergeant les tables du SNDS. Le nom du profil est
-#' déduit de l'identifiant Oracle, par exemple `ORAxxxxxx123` -> `PROFIL_123`.
-#' @param conn Connexion à la base de données
-#' @return Nom du schéma du profil, ou NULL si la connexion n'est pas Oracle
-#' (par exemple sur la base synthétique duckdb).
+#' déduit de l'identifiant Système. C'est plus rapide qu'une [récupération via
+#' Oracle](https://soeiro.gitlab.io/pepidoc/oracle.html#profil-de-connexion).
+#' @return Nom du schéma du profil.
 #'
 #' @export
 #' @family utils
-get_profil_snds <- function(conn) {
-  if (!inherits(conn, "OraConnection")) {
-    return(NULL)
-  }
-  DBI::dbGetQuery(
-    conn,
-    "SELECT 'PROFIL_' || substr(user, 11, 3) AS PROFIL FROM dual"
-  )[[1]]
+get_profile_from_env <- function() {
+  user <- Sys.getenv("USER")
+  num <- substr(user, 11, 13)
+  paste0("PROFIL_", num)
 }
 
 #' Accès à une table du SNDS en qualifiant le schéma du profil.
 #' @description
-#' Certaines mises à jour du portail cassent les connexions Oracle qui ne
-#' déclarent pas le schéma. Cette fonction préfixe donc la table par le profil
-#' de l'utilisateur. Hors Oracle, elle se rabat sur [dplyr::tbl()].
+#' Les connexions Oracle du portail nécessitent de déclarer le schéma du profil
+#' Hors Oracle, elle se rabat sur [dplyr::tbl()].
 #' @param conn Connexion à la base de données
 #' @param table_name Nom de la table
 #' @param profil Nom du schéma du profil. Par défaut, celui de l'utilisateur
@@ -75,11 +69,12 @@ get_profil_snds <- function(conn) {
 #' @export
 #' @family utils
 tbl_oracle <- function(conn, table_name, profil = NULL) {
-  if (is.null(profil)) {
-    profil <- get_profil_snds(conn)
+  # fonctionnement en duckdb ou autre DBI, sans schéma
+  if (!inherits(conn, "OraConnection")) {
+    return(dplyr::tbl(conn, table_name))
   }
   if (is.null(profil)) {
-    return(dplyr::tbl(conn, table_name))
+    profil <- get_profile_from_env()
   }
   dplyr::tbl(conn, DBI::Id(schema = profil, table = table_name))
 }
@@ -230,8 +225,9 @@ get_first_non_archived_year <- function(conn) {
 #' @export
 #' @family utils
 gather_table_stats <- function(conn, table) {
-  user <- DBI::dbGetQuery(conn, "SELECT user FROM dual")
-  user <- DBI::dbQuoteIdentifier(conn, user$USER)
+  user <- Sys.getenv("USER") |>
+    toupper() |>
+    dbQuoteIdentifier(con, x = _)
   DBI::dbExecute(
     conn,
     "BEGIN DBMS_STATS.GATHER_TABLE_STATS(:1, :2); END;",
