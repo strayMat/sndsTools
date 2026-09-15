@@ -31,7 +31,7 @@ Other utils:
 [`connect_oracle()`](https://sndstoolers.github.io/sndsTools/reference/connect_oracle.md),
 [`create_table_from_query()`](https://sndstoolers.github.io/sndsTools/reference/create_table_from_query.md),
 [`get_first_non_archived_year()`](https://sndstoolers.github.io/sndsTools/reference/get_first_non_archived_year.md),
-[`get_profil_snds()`](https://sndstoolers.github.io/sndsTools/reference/get_profil_snds.md),
+[`get_profile_from_env()`](https://sndstoolers.github.io/sndsTools/reference/get_profile_from_env.md),
 [`insert_into_table_from_query()`](https://sndstoolers.github.io/sndsTools/reference/insert_into_table_from_query.md),
 [`retrieve_all_psa_from_idt()`](https://sndstoolers.github.io/sndsTools/reference/retrieve_all_psa_from_idt.md),
 [`retrieve_all_psa_from_psa()`](https://sndstoolers.github.io/sndsTools/reference/retrieve_all_psa_from_psa.md),

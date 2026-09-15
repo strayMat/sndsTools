@@ -60,7 +60,7 @@ Fonctions utilitaires pour manipuler les données extraites.
   : Récupération de l'année non archivée la plus ancienne de la table
   ER_PRS_F.
 
-- [`get_profil_snds()`](https://sndstoolers.github.io/sndsTools/reference/get_profil_snds.md)
+- [`get_profile_from_env()`](https://sndstoolers.github.io/sndsTools/reference/get_profile_from_env.md)
   : Récupération du profil SNDS de l'utilisateur connecté.
 
 - [`insert_into_table_from_query()`](https://sndstoolers.github.io/sndsTools/reference/insert_into_table_from_query.md)

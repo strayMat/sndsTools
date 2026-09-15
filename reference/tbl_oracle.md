@@ -1,8 +1,7 @@
 # Accès à une table du SNDS en qualifiant le schéma du profil.
 
-Certaines mises à jour du portail cassent les connexions Oracle qui ne
-déclarent pas le schéma. Cette fonction préfixe donc la table par le
-profil de l'utilisateur. Hors Oracle, elle se rabat sur
+Les connexions Oracle du portail nécessitent de déclarer le schéma du
+profil Hors Oracle, elle se rabat sur
 [`dplyr::tbl()`](https://dplyr.tidyverse.org/reference/tbl.html).
 
 ## Usage
@@ -38,7 +37,7 @@ Other utils:
 [`create_table_from_query()`](https://sndstoolers.github.io/sndsTools/reference/create_table_from_query.md),
 [`gather_table_stats()`](https://sndstoolers.github.io/sndsTools/reference/gather_table_stats.md),
 [`get_first_non_archived_year()`](https://sndstoolers.github.io/sndsTools/reference/get_first_non_archived_year.md),
-[`get_profil_snds()`](https://sndstoolers.github.io/sndsTools/reference/get_profil_snds.md),
+[`get_profile_from_env()`](https://sndstoolers.github.io/sndsTools/reference/get_profile_from_env.md),
 [`insert_into_table_from_query()`](https://sndstoolers.github.io/sndsTools/reference/insert_into_table_from_query.md),
 [`retrieve_all_psa_from_idt()`](https://sndstoolers.github.io/sndsTools/reference/retrieve_all_psa_from_idt.md),
 [`retrieve_all_psa_from_psa()`](https://sndstoolers.github.io/sndsTools/reference/retrieve_all_psa_from_psa.md),
